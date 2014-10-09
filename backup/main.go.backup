@@ -1,0 +1,82 @@
+// A Go mirror of libfuse's hello.c
+
+package main
+
+import (
+	"flag"
+	"time"
+	//	"log"
+	"fmt"
+	"os"
+	"os/signal"
+
+	"github.com/hanwen/go-fuse/fuse"
+	"github.com/hanwen/go-fuse/fuse/nodefs"
+	"github.com/hanwen/go-fuse/fuse/pathfs"
+)
+
+//basically what we need, except we'll mount
+func umountfs(pathFs *pathfs.PathNodeFs, dir string) {
+
+}
+
+func sighandle(cs chan bool) {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for sig := range c {
+			fmt.Println("quitting!", sig)
+			cs <- true
+		}
+	}()
+}
+
+func main() {
+	orig := "."
+	goenmount := "goenmount"
+
+	os.MkdirAll(goenmount, 755)
+
+	flag.Parse()
+	if flag.NArg() >= 1 {
+		orig = flag.Arg(1)
+	}
+
+	var finalFs pathfs.FileSystem
+
+	loopbackfs := pathfs.NewLoopbackFileSystem(orig)
+	finalFs = loopbackfs
+
+	opts := &nodefs.Options{
+		// These options are to be compatible with libfuse defaults,
+		// making benchmarking easier.
+		NegativeTimeout: time.Second,
+		AttrTimeout:     time.Second,
+		EntryTimeout:    time.Second,
+	}
+	pathFs := pathfs.NewPathNodeFs(finalFs, nil)
+	conn := nodefs.NewFileSystemConnector(pathFs.Root(), opts)
+
+	mOpts := &fuse.MountOptions{
+		AllowOther: false,
+	}
+	state, err := fuse.NewServer(conn.RawFS(), goenmount, mOpts)
+	if err != nil {
+		fmt.Printf("Mount fail: %v\n", err)
+		os.Exit(1)
+	}
+
+	//	make channel for signals.
+	c := make(chan bool, 1)
+	sighandle(c)
+
+	fmt.Println("Mounted!")
+	go state.Serve()
+	<-c
+
+	fmt.Println("umounting=", goenmount)
+	code := pathFs.Unmount(goenmount)
+	if code != fuse.OK {
+		fmt.Println("umount failed.", code)
+	}
+}
