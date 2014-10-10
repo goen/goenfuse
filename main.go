@@ -74,26 +74,45 @@ func killer(p string) (err error) {
 func main() {
 
 	goenmount := "goenmount"
+	trackmount := "remapped"
 
 	os.MkdirAll(goenmount, 755)
 
-	c, err := fuse.Mount(goenmount)
+	// mount the mnt
+	c1, err := fuse.Mount(goenmount)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c2, err := fuse.Mount(trackmount)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	go mountdeleter(goenmount)
+	go mountdeleter(trackmount)
 
-	defer c.Close()
+	defer c1.Close()
+	defer c2.Close()
 
-	err = fs.Serve(c, LoopFS{})
+	err = fs.Serve(c1, LoopFS{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	<-c.Ready
+	err = fs.Serve(c2, TapFS{})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	if err := c.MountError; err != nil {
+	<-c1.Ready
+	<-c2.Ready
+
+	if err := c1.MountError; err != nil {
+		log.Fatal(err)
+	}
+
+	if err := c2.MountError; err != nil {
 		log.Fatal(err)
 	}
 
