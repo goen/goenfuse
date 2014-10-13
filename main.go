@@ -145,7 +145,15 @@ type ffs struct {
 
 //end ffs stuff
 
+func scan_path(p string) {
+	fmt.Println("Scanning path ", p)
+}
+
 func main() {
+	path := []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
+
+	scan_path(path[0])
+
 	loop, errl := mount("goenloop")
 	bin, errb := mount("goenbin")
 
