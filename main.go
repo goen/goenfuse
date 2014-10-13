@@ -7,6 +7,7 @@ import (
 	_ "bazil.org/fuse/fs/fstestutil"
 	"fmt"
 	"os"
+	"os/signal"
 	"time"
 )
 
@@ -140,13 +141,16 @@ func main() {
 	go loop.try_serve(LoopFS{})
 	go bin.try_serve(TapFS{})
 
+	//wait until mounted
 	loop.check_err()
 	bin.check_err()
 
-	//shedule deletion
-	fmt.Println("sleeping")
-	time.Sleep(1 * time.Second)
-	fmt.Println("umounting")
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	for sig := range c {
+		fmt.Println("quitting!", sig)
+		break
+	}
 
 	loop.umount()
 	bin.umount()
