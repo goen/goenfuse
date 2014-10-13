@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+//tapdir
+type tapdir struct{}
+
+func (tapdir) Attr() fuse.Attr {
+	return fuse.Attr{Inode: 1, Mode: os.ModeDir | 0555}
+}
+
 // Dir implements both Node and Handle for the root directory.
 type Dir struct{}
 
