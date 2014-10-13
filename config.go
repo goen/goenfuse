@@ -1,6 +1,6 @@
 package main
 
 const (
-	debug     = false
+	debug     = true
 	checksums = true
 )

@@ -5,10 +5,10 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	_ "bazil.org/fuse/fs/fstestutil"
+	"fmt"
 	"log"
 	"os"
 	"time"
-	"fmt"
 )
 
 // Dir implements both Node and Handle for the root directory.
@@ -23,7 +23,7 @@ func (Dir) Attr() fuse.Attr {
 }
 func (Dir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
 	if debug {
-		fmt.Println("DIR::LOOKUP:",name)
+		fmt.Println("DIR::LOOKUP:", name)
 	}
 
 	if name == "hello" {
@@ -65,8 +65,6 @@ func (File) ReadAll(intr fs.Intr) ([]byte, fuse.Error) {
 }
 
 func mountdeleter(p string) {
-	time.Sleep(10 * time.Second)
-
 	mountkiller(p)
 	os.RemoveAll(p)
 }
@@ -83,7 +81,6 @@ func killer(p string) (err error) {
 	for tries := 0; tries < 1000; tries++ {
 		err = fuse.Unmount(p)
 		if err != nil {
-
 			time.Sleep(10 * time.Millisecond)
 			continue
 		}
@@ -98,50 +95,46 @@ func main() {
 	trackmount := "remapped"
 
 	os.MkdirAll(goenmount, 755)
+	os.MkdirAll(trackmount, 755)
 
 	// mount the mnt
-	c1, err := fuse.Mount(goenmount)
-	if err != nil {
-	if debug {
-		log.Fatal(err)
-	}}
+	c1, err1 := fuse.Mount(goenmount)
+	if err1 != nil {
+		if debug {
+			log.Fatal(err1)
+		}
+	}
 
-	c2, err := fuse.Mount(trackmount)
-	if err != nil {
-	if debug {
-		log.Fatal("alpha",err)
-	}}
+	c2, err2 := fuse.Mount(trackmount)
+	if err2 != nil {
+		if debug {
+			log.Fatal(err2)
+		}
+	}
+
+	go fs.Serve(c1, LoopFS{})
+	go fs.Serve(c2, TapFS{})
 
 	//shedule deletion
-	go mountdeleter(goenmount)
-	go mountdeleter(trackmount)
-
-	defer c1.Close()
-	defer c2.Close()
-
-	err = fs.Serve(c1, LoopFS{})
-	if err != nil {
-	if debug {
-		log.Fatal("bb",err)
-	}}
-
-	err = fs.Serve(c2, TapFS{})
-	if err != nil {
-	if debug {
-		log.Fatal("ccc",err)
-	}}
+	fmt.Println("sleeping")
+	time.Sleep(6 * time.Second)
+	fmt.Println("umounting")
+	mountdeleter(goenmount)
+	mountdeleter(trackmount)
 
 	<-c1.Ready
 	<-c2.Ready
 
 	if err := c1.MountError; err != nil {
-	if debug {
-		log.Fatal("dddd",err)
-	}}
+		if debug {
+			log.Fatal("dddd", err)
+		}
+	}
 
 	if err := c2.MountError; err != nil {
-	if debug {
-		log.Fatal("eeee",err)
-	}}
+		if debug {
+			log.Fatal("eeee", err)
+		}
+	}
 
 }
