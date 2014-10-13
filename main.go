@@ -6,7 +6,6 @@ import (
 	"bazil.org/fuse/fs"
 	_ "bazil.org/fuse/fs/fstestutil"
 	"fmt"
-	"log"
 	"os"
 	"time"
 )
@@ -64,10 +63,29 @@ func (File) ReadAll(intr fs.Intr) ([]byte, fuse.Error) {
 	return []byte(greeting), nil
 }
 
-func umount(p string) (err error) {
+//begin ffs stuff
+
+func mount(dir string) (f ffs, e error) {
+	f.dir = dir
+
+	_, e = os.Stat(f.dir)
+	f.lack = e != nil
+
+	if f.lack {
+		err := os.MkdirAll(f.dir, 755)
+		if err != nil {
+			return f, err
+		}
+	}
+
+	f.c, e = fuse.Mount(f.dir)
+	return f, e
+}
+
+func (f ffs) umount() (err error) {
 	// taken from the fs/fstestutil/mounted.go
 	for tries := 0; tries < 1000; tries++ {
-		err = fuse.Unmount(p)
+		err = fuse.Unmount(f.dir)
 		if err != nil {
 			time.Sleep(10 * time.Millisecond)
 			continue
@@ -77,57 +95,59 @@ func umount(p string) (err error) {
 	return err
 }
 
+func (f ffs) try_serve(s fs.FS) {
+	fs.Serve(f.c, s)
+}
+
+func (f ffs) check_err() error {
+	<-f.c.Ready
+	if err := f.c.MountError; err != nil {
+		return err
+	}
+	return nil
+}
+
+func destroy(f ffs) {
+	f.c.Close()
+
+	if f.lack {
+		os.RemoveAll(f.dir)
+	}
+}
+
+// my fuse fs
+type ffs struct {
+	dir  string
+	lack bool
+	c    *fuse.Conn
+}
+
+//end ffs stuff
+
 func main() {
+	loop, errl := mount("goenloop")
+	bin, errb := mount("goenbin")
 
-	goenmount := "goenmount"
-	trackmount := "remapped"
-
-	os.MkdirAll(goenmount, 755)
-	os.MkdirAll(trackmount, 755)
-
-	// mount the mnt
-	c1, err1 := fuse.Mount(goenmount)
-	if err1 != nil {
-		if debug {
-			log.Fatal(err1)
-		}
+	if errl != nil {
+		panic(errl)
 	}
-	defer c1.Close()
-
-	c2, err2 := fuse.Mount(trackmount)
-	if err2 != nil {
-		if debug {
-			log.Fatal(err2)
-		}
+	defer destroy(loop)
+	if errb != nil {
+		panic(errb)
 	}
-	defer c2.Close()
+	defer destroy(bin)
 
-	go fs.Serve(c1, LoopFS{})
-	go fs.Serve(c2, TapFS{})
+	go loop.try_serve(LoopFS{})
+	go bin.try_serve(TapFS{})
 
-	<-c1.Ready
-	<-c2.Ready
-
-	if err := c1.MountError; err != nil {
-		if debug {
-			log.Fatal("dddd", err)
-		}
-	}
-
-	if err := c2.MountError; err != nil {
-		if debug {
-			log.Fatal("eeee", err)
-		}
-	}
+	loop.check_err()
+	bin.check_err()
 
 	//shedule deletion
 	fmt.Println("sleeping")
-	time.Sleep(6 * time.Second)
+	time.Sleep(1 * time.Second)
 	fmt.Println("umounting")
-	_ = umount(goenmount)
-	_ = umount(trackmount)
 
-	os.RemoveAll(goenmount)
-	os.RemoveAll(trackmount)
-
+	loop.umount()
+	bin.umount()
 }
