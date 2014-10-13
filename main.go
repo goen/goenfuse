@@ -34,6 +34,7 @@ func (Dir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
 
 var dirDirs = []fuse.Dirent{
 	{Inode: 2, Name: "hello", Type: fuse.DT_File},
+	{Inode: 3, Name: "world", Type: fuse.DT_File},
 }
 
 func (Dir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
@@ -42,6 +43,18 @@ func (Dir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 	}
 
 	return dirDirs, nil
+}
+
+// tapfile implements an executable asset used for tracking the activity
+type tapfile struct{}
+
+func (tapfile) Attr() fuse.Attr {
+	return fuse.Attr{Inode: 2, Mode: 0555, Size: uint64(1834576)}
+}
+
+func (tapfile) ReadAll(intr fs.Intr) ([]byte, fuse.Error) {
+	data, _ := Asset("tracker")
+	return data, nil
 }
 
 // File implements both Node and Handle for the hello file.
