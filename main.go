@@ -64,20 +64,8 @@ func (File) ReadAll(intr fs.Intr) ([]byte, fuse.Error) {
 	return []byte(greeting), nil
 }
 
-func mountdeleter(p string) {
-	mountkiller(p)
-	os.RemoveAll(p)
-}
-
-func mountkiller(p string) {
-	err := killer(p)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-}
-
-func killer(p string) (err error) {
+func umount(p string) (err error) {
+	// taken from the fs/fstestutil/mounted.go
 	for tries := 0; tries < 1000; tries++ {
 		err = fuse.Unmount(p)
 		if err != nil {
@@ -104,6 +92,7 @@ func main() {
 			log.Fatal(err1)
 		}
 	}
+	defer c1.Close()
 
 	c2, err2 := fuse.Mount(trackmount)
 	if err2 != nil {
@@ -111,16 +100,10 @@ func main() {
 			log.Fatal(err2)
 		}
 	}
+	defer c2.Close()
 
 	go fs.Serve(c1, LoopFS{})
 	go fs.Serve(c2, TapFS{})
-
-	//shedule deletion
-	fmt.Println("sleeping")
-	time.Sleep(6 * time.Second)
-	fmt.Println("umounting")
-	mountdeleter(goenmount)
-	mountdeleter(trackmount)
 
 	<-c1.Ready
 	<-c2.Ready
@@ -136,5 +119,15 @@ func main() {
 			log.Fatal("eeee", err)
 		}
 	}
+
+	//shedule deletion
+	fmt.Println("sleeping")
+	time.Sleep(6 * time.Second)
+	fmt.Println("umounting")
+	_ = umount(goenmount)
+	_ = umount(trackmount)
+
+	os.RemoveAll(goenmount)
+	os.RemoveAll(trackmount)
 
 }
