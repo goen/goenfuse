@@ -26,6 +26,10 @@ func (tapdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
 	return nil, fuse.ENOENT
 }
 
+func (tapdir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
+	return dirDirs, nil
+}
+
 // Dir implements both Node and Handle for the root directory.
 type Dir struct{}
 
