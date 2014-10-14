@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"time"
 )
 
@@ -145,14 +146,23 @@ type ffs struct {
 
 //end ffs stuff
 
-func scan_path(p string) {
+func visit(path string, f os.FileInfo, err error) error {
+	fmt.Printf("Visited: %s\n", path)
+	return nil
+}
+
+func scan_path(p string) error {
 	fmt.Println("Scanning path ", p)
+
+	return filepath.Walk(p, visit)
 }
 
 func main() {
 	path := []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
 
-	scan_path(path[0])
+	for i := range path {
+		scan_path(path[i])
+	}
 
 	loop, errl := mount("goenloop")
 	bin, errb := mount("goenbin")
