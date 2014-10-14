@@ -19,6 +19,13 @@ func (tapdir) Attr() fuse.Attr {
 	return fuse.Attr{Inode: 1, Mode: os.ModeDir | 0555}
 }
 
+func (tapdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
+	if name == "hi" {
+		return File{}, nil
+	}
+	return nil, fuse.ENOENT
+}
+
 // Dir implements both Node and Handle for the root directory.
 type Dir struct{}
 
