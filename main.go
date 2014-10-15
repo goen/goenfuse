@@ -12,90 +12,6 @@ import (
 	"time"
 )
 
-//tapdir
-type tapdir struct{}
-
-func (tapdir) Attr() fuse.Attr {
-	return fuse.Attr{Inode: 1, Mode: os.ModeDir | 0555}
-}
-
-func (tapdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
-	if name == "hi" {
-		return File{}, nil
-	}
-	return nil, fuse.ENOENT
-}
-
-func (tapdir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
-	return dirDirs, nil
-}
-
-// Dir implements both Node and Handle for the root directory.
-type Dir struct{}
-
-func (Dir) Attr() fuse.Attr {
-	if debug {
-		fmt.Println("DIR::ATTR")
-	}
-
-	return fuse.Attr{Inode: 1, Mode: os.ModeDir | 0555}
-}
-func (Dir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
-	if debug {
-		fmt.Println("DIR::LOOKUP:", name)
-	}
-
-	if name == "hello" {
-		return File{}, nil
-	}
-	return nil, fuse.ENOENT
-}
-
-var dirDirs = []fuse.Dirent{
-	{Inode: 2, Name: "hello", Type: fuse.DT_File},
-	{Inode: 3, Name: "world", Type: fuse.DT_File},
-}
-
-func (Dir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
-	if debug {
-		fmt.Println("DIR::ReadDir")
-	}
-
-	return dirDirs, nil
-}
-
-// tapfile implements an executable asset used for tracking the activity
-type tapfile struct{}
-
-func (tapfile) Attr() fuse.Attr {
-	return fuse.Attr{Inode: 2, Mode: 0555, Size: uint64(1834576)}
-}
-
-func (tapfile) ReadAll(intr fs.Intr) ([]byte, fuse.Error) {
-	data, _ := Asset("tracker")
-	return data, nil
-}
-
-// File implements both Node and Handle for the hello file.
-type File struct{}
-
-const greeting = "hello, world\n"
-
-func (File) Attr() fuse.Attr {
-	if debug {
-		fmt.Println("FILE::attr")
-	}
-
-	return fuse.Attr{Inode: 2, Mode: 0444, Size: uint64(len(greeting))}
-}
-func (File) ReadAll(intr fs.Intr) ([]byte, fuse.Error) {
-	if debug {
-		fmt.Println("FILE::readall")
-	}
-
-	return []byte(greeting), nil
-}
-
 //begin ffs stuff
 
 func mount(dir string) (f ffs, e error) {
@@ -112,17 +28,22 @@ func mount(dir string) (f ffs, e error) {
 	}
 
 	f.c, e = fuse.Mount(f.dir)
+	f.u = false
 	return f, e
 }
 
-func (f ffs) umount() (err error) {
+func (f *ffs) umount() (err error) {
+	if f.u {
+		return nil
+	}
 	// taken from the fs/fstestutil/mounted.go
-	for tries := 0; tries < 1000; tries++ {
+	for tries := 0; tries < 100; tries++ {
 		err = fuse.Unmount(f.dir)
 		if err != nil {
 			time.Sleep(10 * time.Millisecond)
 			continue
 		}
+		f.u = true
 		return nil
 	}
 	return err
@@ -153,26 +74,39 @@ type ffs struct {
 	dir  string
 	lack bool
 	c    *fuse.Conn
+	u    bool //umounted ok
 }
 
-//end ffs stuff
-
-func visit(path string, f os.FileInfo, err error) error {
-	fmt.Printf("Visited: %s\n", path)
-	return nil
-}
-
-func scan_path(p string) error {
+func scan_path(p string) (items []string) {
 	fmt.Println("Scanning path ", p)
 
-	return filepath.Walk(p, visit)
+	filepath.Walk(p, func(path string, f os.FileInfo, _ error) error {
+
+		if p == path {
+			return nil
+		}
+
+		//	fmt.Println("|>>| ",  path)
+
+		base := filepath.Base(path)
+
+		items = append(items, base)
+		return nil
+	})
+
+	//	for i := range items {
+	//	fmt.Println("|| ", items[i])
+	//	}
+
+	return items
 }
 
 func main() {
 	path := []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
+	pitems := [][]string{}
 
 	for i := range path {
-		scan_path(path[i])
+		pitems = append(pitems, scan_path(path[i]))
 	}
 
 	loop, errl := mount("goenloop")
@@ -188,19 +122,33 @@ func main() {
 	defer destroy(bin)
 
 	go loop.try_serve(LoopFS{})
-	go bin.try_serve(TapFS{})
+	go bin.try_serve(tapperfs{r: tapperrootnode{dirs: 6, itemz: pitems}})
 
 	//wait until mounted
 	loop.check_err()
 	bin.check_err()
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	for sig := range c {
-		fmt.Println("quitting!", sig)
-		break
-	}
+	for !bin.u || !loop.u {
 
-	loop.umount()
-	bin.umount()
+		//wait for signal
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		for sig := range c {
+			fmt.Println("quitting!", sig)
+			break
+		}
+
+		if loop.umount() != nil {
+			fmt.Println("Umounting ", loop.dir, " failed")
+		}
+		if bin.umount() != nil {
+			fmt.Println("Umounting ", bin.dir, " failed")
+		}
+
+		if !bin.u || !loop.u {
+			fmt.Println("Please, stop using & quit the drive")
+			fmt.Println("Then, try again..")
+		}
+
+	}
 }
