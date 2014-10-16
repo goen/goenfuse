@@ -5,6 +5,7 @@ import (
 	"bazil.org/fuse/fs"
 
 	"fmt"
+	"io/ioutil"
 	"os"
 	"time"
 )
@@ -26,14 +27,16 @@ type looperfs struct {
 }
 
 type looperdir struct {
+	name string
 }
 
 type looperfile struct {
+	name string
 }
 
 // get fs root node
 func (looperfs) Root() (fs.Node, fuse.Error) {
-	return looperdir{}, nil
+	return looperdir{name: "."}, nil
 }
 
 func (looperdir) Attr() fuse.Attr {
@@ -46,20 +49,34 @@ func (looperdir) Attr() fuse.Attr {
 	return a
 }
 
-func (looperdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
-	if name == "hello" {
-		return looperfile{}, nil
+func (l looperdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
+
+	fi, err := ioutil.ReadDir(l.name)
+	if err != nil {
+		return nil, fuse.ENOENT
 	}
-	if name == "world" {
-		return looperdir{}, nil
+
+	for i := range fi {
+		if name == fi[i].Name() {
+			return looperfile{}, nil
+		}
 	}
+
 	return nil, fuse.ENOENT
 }
 
-func (looperdir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
-	var dirz = []fuse.Dirent{
-		{Inode: 2, Name: "hello", Type: fuse.DT_File},
-		{Inode: 3, Name: "world", Type: fuse.DT_Dir},
+func (l looperdir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
+
+	fi, err := ioutil.ReadDir(l.name)
+	if err != nil {
+		return nil, fuse.ENOENT
+	}
+
+	var dirz []fuse.Dirent
+
+	for i := range fi {
+		node := fuse.Dirent{Inode: 2, Name: fi[i].Name(), Type: fuse.DT_File}
+		dirz = append(dirz, node)
 	}
 
 	return dirz, nil
