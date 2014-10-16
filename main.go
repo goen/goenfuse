@@ -86,17 +86,11 @@ func scan_path(p string) (items []string) {
 			return nil
 		}
 
-		//	fmt.Println("|>>| ",  path)
-
 		base := filepath.Base(path)
 
 		items = append(items, base)
 		return nil
 	})
-
-	//	for i := range items {
-	//	fmt.Println("|| ", items[i])
-	//	}
 
 	return items
 }
