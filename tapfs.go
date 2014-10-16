@@ -10,29 +10,16 @@ import (
 )
 
 //ok
-func generic_attr(now bool, l bool) fuse.Attr {
+func generic_attr() fuse.Attr {
 	u := time.Unix(0, 0)
-	if now {
-		u = time.Now()
-	}
-	var d uint32 = 0xB1F5     //BIn-FS
-	var f uint32 = 0x00121012 //don't modify
-	if l {
-		d = 0x70F5 //LOop-FS
-		f = 0      //modify
-	}
-
 	return fuse.Attr{
 		Atime: u, Mtime: u, Ctime: u, Crtime: u,
 		Uid:   uint32(os.Geteuid()),
 		Gid:   uint32(os.Getegid()),
-		Rdev:  d,
-		Flags: f,
+		Rdev:  0xB1F5,     //BIn-FS
+		Flags: 0x00121012, //don't modify
 	}
 }
-
-// tapperdir implements both Node and Handle for the root directory.
-//HandleReader, HandleReadDirer
 
 // tapperFS dirs: root dir & the various dirs
 //
@@ -50,14 +37,11 @@ type tapperrootnode struct {
 
 //ok
 type tappertrackernode struct {
-	//???
 }
 
 //ok
 type tapperdirnode struct {
-	i uint64 //name = i, inode = i + 3
-	// pointer to slice of strings
-
+	i     uint64 //name = i, inode = i + 3
 	itemz []string
 }
 
@@ -73,7 +57,7 @@ func (s tapperfs) Root() (fs.Node, fuse.Error) {
 }
 
 func (tapperrootnode) Attr() fuse.Attr {
-	a := generic_attr(false, false)
+	a := generic_attr()
 	a.Inode = 1
 	a.Size = 4096
 	a.Blocks = 8
@@ -120,8 +104,6 @@ func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 }
 
 func (tappertrackernode) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
-	//fmt.Print("Open Called: ", req, resp, intr)
-
 	a, err := Asset("tracker")
 	if err != nil {
 		return nil, nil //FIXME return error here
@@ -132,7 +114,7 @@ func (tappertrackernode) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, in
 
 //ok
 func (tappertrackernode) Attr() fuse.Attr {
-	a := generic_attr(false, false)
+	a := generic_attr()
 
 	a.Inode = 2
 	a.Size = bin_tracker_size
@@ -144,7 +126,7 @@ func (tappertrackernode) Attr() fuse.Attr {
 
 //ok
 func (s tapperdirnode) Attr() fuse.Attr {
-	a := generic_attr(false, false)
+	a := generic_attr()
 
 	a.Inode = s.i + 3
 	a.Size = 4096
@@ -160,16 +142,9 @@ func (s tapperdirnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 	ibase := (s.i << 18) + 128
 
 	for i := range s.itemz {
-
-		//		fmt.Println("reading dir:", s.itemz[i])
 		item := fuse.Dirent{Inode: uint64(i) + ibase, Name: s.itemz[i], Type: fuse.DT_Link}
 		foobar = append(foobar, item)
 	}
-	/*
-		item1 := fuse.Dirent{Inode: 1337, Name: "hello", Type: fuse.DT_Link}
-		item2 := fuse.Dirent{Inode: 1338, Name: "world", Type: fuse.DT_Link}
-		foobar = append(foobar, item1, item2)
-	*/
 	return foobar, nil
 }
 
@@ -179,21 +154,11 @@ func (s tapperdirnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
 
 	// TODO: binary search
 	for i := range s.itemz {
-		//		fmt.Println("||", s.itemz[i])
 		if name == s.itemz[i] {
 			return tapperbinlink{inode: ibase + uint64(i)}, nil
 		}
 	}
-	/*
-		if name == "hello" {
-			return tapperbinlink{inode: 1337}, nil
-		}
-		if name == "world" {
-			return tapperbinlink{inode: 1338}, nil
-		}
 
-		fmt.Println("Lookup!!!!!!!1", name, intr)
-	*/
 	return nil, fuse.ENOENT
 }
 
@@ -201,7 +166,7 @@ func (s tapperdirnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
 
 //ok
 func (s tapperbinlink) Attr() fuse.Attr {
-	a := generic_attr(false, false)
+	a := generic_attr()
 
 	a.Inode = s.inode
 	a.Size = 10
