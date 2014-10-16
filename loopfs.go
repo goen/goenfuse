@@ -46,6 +46,35 @@ func (looperdir) Attr() fuse.Attr {
 	return a
 }
 
+func (looperdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
+	if name == "hello" {
+		return looperfile{}, nil
+	}
+	if name == "world" {
+		return looperdir{}, nil
+	}
+	return nil, fuse.ENOENT
+}
+
+func (looperdir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
+	var dirz = []fuse.Dirent{
+		{Inode: 2, Name: "hello", Type: fuse.DT_File},
+		{Inode: 3, Name: "world", Type: fuse.DT_Dir},
+	}
+
+	return dirz, nil
+}
+
+func (looperfile) Attr() fuse.Attr {
+	a := lgeneric_attr()
+	a.Inode = 2
+	a.Size = 4096
+	a.Blocks = 8
+	a.Mode = 0555
+	a.Nlink = 1 // correct?//FIXME
+	return a
+}
+
 // LoopFS implements the loop part of the fs.
 // A FUSE filesystem that shunts all request to an underlying file
 // system.
