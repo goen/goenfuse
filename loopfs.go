@@ -35,7 +35,7 @@ type looperfile struct {
 }
 
 // get fs root node
-func (looperfs) Root() (fs.Node, fuse.Error) {
+func (l looperfs) Root() (fs.Node, fuse.Error) {
 	return looperdir{name: "."}, nil
 }
 
@@ -50,16 +50,20 @@ func (looperdir) Attr() fuse.Attr {
 }
 
 func (l looperdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
+	if l.name == "." && (name == mpoint_gloop || name == mpoint_gbin) {
+		return nil, fuse.ENOENT
+	}
 
-	fi, err := ioutil.ReadDir(l.name)
+	fi, err := os.Lstat(l.name + "/" + name)
+
 	if err != nil {
 		return nil, fuse.ENOENT
 	}
 
-	for i := range fi {
-		if name == fi[i].Name() {
-			return looperfile{}, nil
-		}
+	if fi.IsDir() {
+		return looperdir{name: l.name + "/" + name}, nil
+	} else {
+		return looperfile{name: l.name + "/" + name}, nil
 	}
 
 	return nil, fuse.ENOENT
@@ -74,8 +78,14 @@ func (l looperdir) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 
 	var dirz []fuse.Dirent
 
-	for i := range fi {
-		node := fuse.Dirent{Inode: 2, Name: fi[i].Name(), Type: fuse.DT_File}
+	for i := range fi { //FIXME: inodez, typez
+		name := fi[i].Name()
+
+		if name == mpoint_gloop || name == mpoint_gbin {
+			continue
+		}
+
+		node := fuse.Dirent{Inode: 2, Name: name, Type: fuse.DT_File}
 		dirz = append(dirz, node)
 	}
 

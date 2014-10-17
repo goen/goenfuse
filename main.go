@@ -96,6 +96,7 @@ func scan_path(p string) (items []string) {
 }
 
 func main() {
+
 	path := []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
 	pitems := [][]string{}
 
@@ -103,8 +104,8 @@ func main() {
 		pitems = append(pitems, scan_path(path[i]))
 	}
 
-	loop, errl := mount("goenloop")
-	bin, errb := mount("goenbin")
+	loop, errl := mount(mpoint_gloop)
+	bin, errb := mount(mpoint_gbin)
 
 	if errl != nil {
 		panic(errl)
