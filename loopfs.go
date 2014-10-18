@@ -138,12 +138,24 @@ func (l looperfile) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs
 	return nil
 }
 
-/*
-func (l looperfile) ReadAll(intr fs.Intr) ([]byte, fuse.Error) {
-	return ioutil.ReadAll(l.r)
-}
-*/
 func (l looperfile) Write(req *fuse.WriteRequest, resp *fuse.WriteResponse, intr fs.Intr) fuse.Error {
-	fmt.Println("WRITE")
+	//	io.WriteAt(req.Data, req.Offset)
+
+	fmt.Println("WRITE at ", req.Offset)
+	return nil
+}
+
+func (l looperdir) Mkdir(req *fuse.MkdirRequest, intr fs.Intr) (fs.Node, fuse.Error) {
+	fmt.Println("dirmkkdir at ", req.Name)
+	os.Mkdir(req.Name, req.Mode)
+	return looperdir{name: l.name + "/" + req.Name}, nil
+}
+func (l looperfile) Flush(req *fuse.FlushRequest, intr fs.Intr) fuse.Error {
+	fmt.Println("flush at ")
+	return nil
+}
+
+func (l looperfile) Release(req *fuse.ReleaseRequest, intr fs.Intr) fuse.Error {
+	fmt.Println("release at ")
 	return nil
 }
