@@ -126,8 +126,6 @@ func (l looperfile) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs
 }
 
 func (l looperfile) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs.Intr) fuse.Error {
-	fmt.Println("READ ")
-
 	// TODO check to see if opened?
 	_, err := l.f.Seek(req.Offset, 0)
 	if err != nil {
@@ -140,6 +138,12 @@ func (l looperfile) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs
 	return nil
 }
 
+/*
 func (l looperfile) ReadAll(intr fs.Intr) ([]byte, fuse.Error) {
 	return ioutil.ReadAll(l.r)
+}
+*/
+func (l looperfile) Write(req *fuse.WriteRequest, resp *fuse.WriteResponse, intr fs.Intr) fuse.Error {
+	fmt.Println("WRITE")
+	return nil
 }
