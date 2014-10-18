@@ -150,6 +150,12 @@ func (l looperdir) Mkdir(req *fuse.MkdirRequest, intr fs.Intr) (fs.Node, fuse.Er
 	os.Mkdir(req.Name, req.Mode)
 	return looperdir{name: l.name + "/" + req.Name}, nil
 }
+func (l looperdir) Remove(req *fuse.RemoveRequest, intr fs.Intr) fuse.Error {
+	os.Remove(req.Name)
+	fmt.Println("dirrm at ", req.Name)
+	return nil
+}
+
 func (l looperfile) Flush(req *fuse.FlushRequest, intr fs.Intr) fuse.Error {
 	fmt.Println("flush at ")
 	return nil
