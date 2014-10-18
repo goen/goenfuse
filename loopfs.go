@@ -4,6 +4,9 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 
+	"bufio"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 )
@@ -22,6 +25,8 @@ type looperdir struct {
 
 type looperfile struct {
 	name string
+	f    *os.File
+	r    io.Reader
 }
 
 // get fs root node
@@ -107,4 +112,34 @@ func (l looperfile) Attr() fuse.Attr {
 	b.Inode ^= 0x7fff
 
 	return b
+}
+
+func (l looperfile) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
+	file, err := os.Open(l.name)
+	l.f = file
+	if err != nil {
+		return nil, err
+	}
+	l.r = bufio.NewReader(file)
+
+	return l, nil
+}
+
+func (l looperfile) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs.Intr) fuse.Error {
+	fmt.Println("READ ")
+
+	// TODO check to see if opened?
+	_, err := l.f.Seek(req.Offset, 0)
+	if err != nil {
+		return fuse.EIO
+	}
+	_, err = io.ReadFull(l.f, resp.Data)
+	if err != nil {
+		return fuse.EIO
+	}
+	return nil
+}
+
+func (l looperfile) ReadAll(intr fs.Intr) ([]byte, fuse.Error) {
+	return ioutil.ReadAll(l.r)
 }
