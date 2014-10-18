@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+const (
+	inodeoffset = 5
+)
+
 //ok
 func generic_attr() fuse.Attr {
 	u := time.Unix(0, 0)
@@ -41,7 +45,7 @@ type tappertrackernode struct {
 
 //ok
 type tapperdirnode struct {
-	i     uint64 //name = i, inode = i + 3
+	i     uint64 //name = i, inode = i + inodeoffset
 	itemz []string
 }
 
@@ -68,7 +72,7 @@ func (tapperrootnode) Attr() fuse.Attr {
 
 //ok
 func (s tapperrootnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
-	if name == "tracker" {
+	if name == "tracker" || name == "track" || name == "untrack" {
 		return tappertrackernode{}, nil
 	}
 
@@ -84,9 +88,12 @@ func (s tapperrootnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) 
 
 //ok
 func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
-	var dirz [101]fuse.Dirent
+	var dirz [103]fuse.Dirent
+	foffset := 3
 
 	dirz[0] = fuse.Dirent{Inode: 2, Name: "tracker", Type: fuse.DT_File}
+	dirz[1] = fuse.Dirent{Inode: 3, Name: "track", Type: fuse.DT_File}
+	dirz[2] = fuse.Dirent{Inode: 4, Name: "untrack", Type: fuse.DT_File}
 
 	end := int(s.dirs)
 	if end >= 100 {
@@ -94,11 +101,11 @@ func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 	}
 
 	for i := 0; i < end; i++ {
-		dirz[i+1].Inode = uint64(i + 3)
-		dirz[i+1].Name = fmt.Sprintf("%02d", i)
-		dirz[i+1].Type = fuse.DT_Dir
+		dirz[i+foffset].Inode = uint64(i + inodeoffset)
+		dirz[i+foffset].Name = fmt.Sprintf("%02d", i)
+		dirz[i+foffset].Type = fuse.DT_Dir
 	}
-	sdirs := dirz[0 : end+1]
+	sdirs := dirz[0 : end+foffset]
 
 	return sdirs, nil
 }
@@ -128,7 +135,7 @@ func (tappertrackernode) Attr() fuse.Attr {
 func (s tapperdirnode) Attr() fuse.Attr {
 	a := generic_attr()
 
-	a.Inode = s.i + 3
+	a.Inode = s.i + inodeoffset
 	a.Size = 4096
 	a.Blocks = 8
 	a.Mode = os.ModeDir | 0555

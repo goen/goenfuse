@@ -36,7 +36,7 @@ func (l looperdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
 
 	fi, err := os.Lstat(l.name + "/" + name)
 	if err != nil {
-		return looperdir{name: l.name}, nil
+		return nil, fuse.ENOENT
 	}
 
 	if fi.IsDir() {
