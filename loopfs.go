@@ -144,8 +144,14 @@ func (l looperfile) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs
 func (l looperfile) Write(req *fuse.WriteRequest, resp *fuse.WriteResponse, intr fs.Intr) fuse.Error {
 
 	/*
-	   d.Lock()
-	   defer d.Unlock()
+	   size, err := d.TmpFile.Write(req.Data)
+	   if err != nil {
+	       log.Println(err)
+	       return err
+	   }
+	   resp.Size = size
+	   return nil
+
 	*/
 	size, err := l.f.Write(req.Data)
 	if err != nil {
@@ -195,3 +201,5 @@ func (l looperdir) Create(req *fuse.CreateRequest, resp *fuse.CreateResponse, in
 
 	return f, f, nil
 }
+
+//TODO: file: setattr,lock/unlock
