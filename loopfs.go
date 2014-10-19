@@ -4,7 +4,7 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 
-	"bufio"
+	//	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,7 +26,7 @@ type looperdir struct {
 type looperfile struct {
 	name string
 	f    *os.File
-	r    io.Reader
+	//	r    io.Reader
 }
 
 // get fs root node
@@ -115,12 +115,15 @@ func (l looperfile) Attr() fuse.Attr {
 }
 
 func (l looperfile) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
+
+	fmt.Println("opening ", l.name)
+	l.f.Close()
 	file, err := os.Open(l.name)
 	l.f = file
 	if err != nil {
 		return nil, err
 	}
-	l.r = bufio.NewReader(file)
+	//	l.r = bufio.NewReader(file)
 
 	return l, nil
 }
@@ -139,20 +142,28 @@ func (l looperfile) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs
 }
 
 func (l looperfile) Write(req *fuse.WriteRequest, resp *fuse.WriteResponse, intr fs.Intr) fuse.Error {
-	//	io.WriteAt(req.Data, req.Offset)
+
+	/*
+	   d.Lock()
+	   defer d.Unlock()
+	*/
+	size, err := l.f.Write(req.Data)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	resp.Size = size
 
 	fmt.Println("WRITE at ", req.Offset)
 	return nil
 }
 
 func (l looperdir) Mkdir(req *fuse.MkdirRequest, intr fs.Intr) (fs.Node, fuse.Error) {
-	fmt.Println("dirmkkdir at ", req.Name)
 	os.Mkdir(req.Name, req.Mode)
 	return looperdir{name: l.name + "/" + req.Name}, nil
 }
 func (l looperdir) Remove(req *fuse.RemoveRequest, intr fs.Intr) fuse.Error {
 	os.Remove(req.Name)
-	fmt.Println("dirrm at ", req.Name)
 	return nil
 }
 
@@ -167,16 +178,13 @@ func (l looperfile) Release(req *fuse.ReleaseRequest, intr fs.Intr) fuse.Error {
 }
 
 func (l looperdir) Create(req *fuse.CreateRequest, resp *fuse.CreateResponse, intr fs.Intr) (fs.Node, fs.Handle, fuse.Error) {
-	fmt.Println("create at ", req.Name)
-
 	fname := l.name + "/" + req.Name
 
 	fi, err := os.Create(fname)
 	if err != nil {
-		fmt.Println("!! ", err)
 		return nil, nil, err
 	}
-
+	//	l.f = fi
 	f := looperfile{name: fname, f: fi}
 
 	return f, f, nil
