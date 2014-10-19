@@ -165,3 +165,19 @@ func (l looperfile) Release(req *fuse.ReleaseRequest, intr fs.Intr) fuse.Error {
 	fmt.Println("release at ")
 	return nil
 }
+
+func (l looperdir) Create(req *fuse.CreateRequest, resp *fuse.CreateResponse, intr fs.Intr) (fs.Node, fs.Handle, fuse.Error) {
+	fmt.Println("create at ", req.Name)
+
+	fname := l.name + "/" + req.Name
+
+	fi, err := os.Create(fname)
+	if err != nil {
+		fmt.Println("!! ", err)
+		return nil, nil, err
+	}
+
+	f := looperfile{name: fname, f: fi}
+
+	return f, f, nil
+}
