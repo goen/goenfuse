@@ -9,22 +9,40 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
 //begin ffs stuff
 
+func protect(g func()) {
+
+	g()
+}
+
 func mount(dir string) (f ffs, e error) {
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	f.dir = dir
 
 	_, e = os.Stat(f.dir)
 	f.lack = e != nil
 
+	panik := true
 	if f.lack {
-		err := os.MkdirAll(f.dir, 755)
-		if err != nil {
-			return f, err
-		}
+		go func(dir string, panik *bool) {
+			defer wg.Done()
+			if os.MkdirAll(dir, 755) == nil {
+				*panik = false
+			}
+		}(f.dir, &panik)
+	}
+
+	wg.Wait()
+	if panik {
+		return f, fmt.Errorf("Create directory failed.")
 	}
 
 	f.c, e = fuse.Mount(f.dir)
@@ -106,13 +124,12 @@ func main() {
 	loop, errl := mount(mpoint_gloop)
 	bin, errb := mount(mpoint_gbin)
 
-	if errl != nil {
-		panic(errl)
+	if errl != nil || errb != nil {
+		fmt.Println("Mount failed: ", errl)
+		fmt.Println("Try umounting /dev/fuse")
+		return
 	}
 	defer destroy(loop)
-	if errb != nil {
-		panic(errb)
-	}
 	defer destroy(bin)
 
 	go loop.try_serve(looperfs{})
