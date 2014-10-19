@@ -96,7 +96,6 @@ func scan_path(p string) (items []string) {
 }
 
 func main() {
-
 	path := []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
 	pitems := [][]string{}
 

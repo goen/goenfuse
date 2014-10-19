@@ -4,7 +4,6 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 
-	//	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,10 +25,8 @@ type looperdir struct {
 type looperfile struct {
 	name string
 	f    *os.File
-	//	r    io.Reader
 }
 
-// get fs root node
 func (looperfs) Root() (fs.Node, fuse.Error) {
 	return looperdir{name: "."}, nil
 }
@@ -143,16 +140,6 @@ func (l looperfile) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs
 
 func (l looperfile) Write(req *fuse.WriteRequest, resp *fuse.WriteResponse, intr fs.Intr) fuse.Error {
 
-	/*
-	   size, err := d.TmpFile.Write(req.Data)
-	   if err != nil {
-	       log.Println(err)
-	       return err
-	   }
-	   resp.Size = size
-	   return nil
-
-	*/
 	size, err := l.f.Write(req.Data)
 	if err != nil {
 		fmt.Println(err)
@@ -160,7 +147,7 @@ func (l looperfile) Write(req *fuse.WriteRequest, resp *fuse.WriteResponse, intr
 	}
 	resp.Size = size
 
-	fmt.Println("WRITE at ", req.Offset)
+	//	fmt.Println("WRITE at ", req.Offset)
 	return nil
 }
 
@@ -180,7 +167,7 @@ func (l looperfile) Remove(req *fuse.RemoveRequest, intr fs.Intr) fuse.Error {
 }
 
 func (l looperfile) Flush(req *fuse.FlushRequest, intr fs.Intr) fuse.Error {
-	fmt.Println("flush at ")
+	l.f.Close()
 	return nil
 }
 
