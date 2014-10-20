@@ -71,7 +71,7 @@ func (tapperrootnode) Attr() fuse.Attr {
 
 //ok
 func (s tapperrootnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
-	if name == "tracker" || name == "track" || name == "untrack" {
+	if name == "tracker" || name == ".track" || name == ".untrack" {
 		return tappertrackernode{}, nil
 	}
 
@@ -92,8 +92,8 @@ func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 	foffset := 3
 
 	dirz[0] = fuse.Dirent{Inode: 2, Name: "tracker", Type: fuse.DT_File}
-	dirz[1] = fuse.Dirent{Inode: 3, Name: "track", Type: fuse.DT_File}
-	dirz[2] = fuse.Dirent{Inode: 4, Name: "untrack", Type: fuse.DT_File}
+	dirz[1] = fuse.Dirent{Inode: 3, Name: ".track", Type: fuse.DT_File}
+	dirz[2] = fuse.Dirent{Inode: 4, Name: ".untrack", Type: fuse.DT_File}
 
 	end := int(len(s.itemz))
 	if end >= 100 {
