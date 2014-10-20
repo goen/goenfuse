@@ -5,6 +5,7 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	_ "bazil.org/fuse/fs/fstestutil"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -13,38 +14,45 @@ import (
 	"time"
 )
 
+const (
+	coolflag = "override-my-path"
+)
+
+var coolflagg = flag.String(coolflag, "", "Skip binary self-path lookup and self-check ")
+
 //begin ffs stuff
 
-func protect(g func()) {
-
-	g()
-}
-
-func mount(dir string) (f ffs, e error) {
-
+func failsafe_mkdir_all(dir string, perm os.FileMode) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	f.dir = dir
-
-	_, e = os.Stat(f.dir)
-	f.lack = e != nil
-
 	panik := true
-	if f.lack {
-		go func(dir string, panik *bool) {
-			defer wg.Done()
-			if os.MkdirAll(dir, 755) == nil {
-				*panik = false
-			}
-		}(f.dir, &panik)
-	}
+
+	go func(dir string, panik *bool) {
+		defer wg.Done()
+		if os.MkdirAll(dir, perm) == nil {
+			*panik = false
+		}
+	}(dir, &panik)
 
 	wg.Wait()
 	if panik {
-		return f, fmt.Errorf("Create directory failed.")
+		return fmt.Errorf("Failsafe make directory failed.")
 	}
+	return nil
+}
 
+func mount(dir string) (f ffs, e error) {
+	_, e = os.Stat(f.dir)
+	f.lack = e != nil
+	f.dir = dir
+	if f.lack {
+		//	e = os.MkdirAll(dir, 755)
+		e = failsafe_mkdir_all(dir, 755)
+		if e != nil {
+			return f, e
+		}
+	}
 	f.c, e = fuse.Mount(f.dir)
 	f.u = false
 	return f, e
@@ -95,8 +103,7 @@ type ffs struct {
 	u    bool //umounted ok
 }
 
-func scan_path(p string) (items []string) {
-	fmt.Println("Scanning path ", p)
+func scan_path(p string) (items []string, has_me bool) {
 
 	filepath.Walk(p, func(path string, f os.FileInfo, _ error) error {
 
@@ -106,20 +113,112 @@ func scan_path(p string) (items []string) {
 
 		base := filepath.Base(path)
 
+		if base == self_file {
+			has_me = true
+		}
+
 		items = append(items, base)
 		return nil
 	})
 
-	return items
+	return items, has_me
+}
+
+var species = flag.String("species", "gopher", "the species we are studying")
+
+func tracker_main() {
+
 }
 
 func main() {
-	path := []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"}
-	pitems := [][]string{}
+	flag.Parse()
+	self := *coolflagg
 
-	for i := range path {
-		pitems = append(pitems, scan_path(path[i]))
+	var tracker bool
+
+	if filepath.Base(os.Args[0]) != self_file {
+		tracker = true
 	}
+
+	if len(os.Args) > 2 {
+		tracker = true
+	}
+
+	if self != "" {
+		tracker = false
+	}
+
+	if tracker {
+		tracker_main()
+		return
+	}
+
+	// this is the path
+
+	// FIXME: load here actual env from path
+	path := []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin",
+		"/usr/bin", "/sbin", "/bin"}
+
+	// load the path items from path
+
+	var pitems_array [100][]string
+	pitems := pitems_array[0:len(path)]
+
+	var mybinwhere uint32 = 0xffff
+
+	var wg sync.WaitGroup
+	for i := range path {
+		wg.Add(1)
+		go func(j uint32) {
+			var has_me bool
+			pitems_array[j], has_me = scan_path(path[j])
+			if has_me {
+				mybinwhere = j
+			}
+			wg.Done()
+		}(uint32(i))
+	}
+	wg.Wait()
+	//done loading path items
+
+	self_locs := []string{}
+
+	if self == "" {
+
+		// look at my binary in path
+
+		if mybinwhere < uint32(len(path)) {
+			p := path[mybinwhere]
+			self_locs = append(self_locs, p+"/"+self_file, p+"/"+os.Args[0])
+		}
+
+		// this binary may be in this dir
+		pwd, err := os.Getwd()
+		if err == nil {
+			self_locs = append(self_locs, pwd+"/"+self_file, pwd+"/"+os.Args[0])
+		}
+
+		// consider add lookup by readlink -f /proc/$pid/exe
+
+		// check binary contains the magic string selfrtg
+		for i := range self_locs {
+			if self_check(self_locs[i]) {
+				self = self_locs[i]
+				//			fmt.Println("FOUND MYSELF AT ", self)
+				break
+			}
+		}
+
+		if self == "" {
+			fmt.Println("The `" + self_file + "` file not found.\n" +
+				"Run " + self_file + " --" + coolflag + "=/../.." + self_file)
+			return
+		}
+	}
+
+	//capturing signals before and after mount
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt)
 
 	loop, errl := mount(mpoint_gloop)
 	bin, errb := mount(mpoint_gbin)
@@ -129,6 +228,7 @@ func main() {
 		fmt.Println("Try umounting /dev/fuse")
 		return
 	}
+
 	defer destroy(loop)
 	defer destroy(bin)
 
@@ -142,10 +242,8 @@ func main() {
 	for !bin.u || !loop.u {
 
 		//wait for signal
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-		for sig := range c {
-			fmt.Println("quitting!", sig)
+		for sig := range sigchan {
+			fmt.Println("stopped!", sig)
 			break
 		}
 

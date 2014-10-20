@@ -79,6 +79,11 @@ func (s tapperrootnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) 
 	var i int
 
 	n, err := fmt.Sscanf(name, "%02d", &i)
+
+	if s.dirs != uint64(len(s.itemz)) {
+		panic("wat the fuk")
+	}
+
 	if (err != nil) || (n != 1) || (uint64(i) >= s.dirs) {
 		return nil, fuse.ENOENT
 	}
