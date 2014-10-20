@@ -5,7 +5,7 @@ import (
 	"bazil.org/fuse/fs"
 
 	"fmt"
-	"io"
+	"io/ioutil"
 	"os"
 	"time"
 )
@@ -119,16 +119,17 @@ func (t tappertrackernode) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, 
 	// get self path here
 	name, _ := (*t.s).get()
 
-	t.f.Close()
-	file, err := os.Open(name)
-	if err != nil {
-		return nil, err
-	}
-	t.f = file
+	file, err := ioutil.ReadFile(name)
 
-	return t, nil
+	if err != nil {
+		fmt.Println("!!!!!!!")
+	}
+
+	return fs.DataHandle(file), err
+
 }
 
+/*
 func (t tappertrackernode) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs.Intr) fuse.Error {
 	// TODO check to see if opened?
 	_, err := t.f.Seek(req.Offset, 0)
@@ -146,7 +147,7 @@ func (t tappertrackernode) Flush(req *fuse.FlushRequest, intr fs.Intr) fuse.Erro
 	t.f.Close()
 	return nil
 }
-
+*/
 //ok
 func (t tappertrackernode) Attr() fuse.Attr {
 	_, z := (*t.s).get()
