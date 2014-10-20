@@ -36,10 +36,12 @@ type tapperfs struct {
 //ok
 type tapperrootnode struct {
 	itemz [][]string // len(itemz) = 1 + maximum name
+	s     *self
 }
 
 //ok
 type tappertrackernode struct {
+	s *self
 }
 
 //ok
@@ -72,7 +74,7 @@ func (tapperrootnode) Attr() fuse.Attr {
 //ok
 func (s tapperrootnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
 	if name == "tracker" || name == ".track" || name == ".untrack" {
-		return tappertrackernode{}, nil
+		return tappertrackernode{s: s.s}, nil
 	}
 
 	var i int
@@ -110,8 +112,11 @@ func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 	return sdirs, nil
 }
 
-func (tappertrackernode) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
+func (t tappertrackernode) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
 	//TODO: open self here
+	// get self path here
+	fmt.Println(">>>", (*t.s).get())
+
 	return fs.DataHandle([]byte("")), nil
 }
 

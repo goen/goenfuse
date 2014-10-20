@@ -5,12 +5,36 @@ import (
 	"bufio"
 	"bytes"
 	"os"
+	"sync"
 )
 
 const (
 	self_file = "goenfuse"
 	selfrtg   = "\xb8\x4c\x10\x44\x00\x00\x00\x00\x00\x00\x8b\x55\x84\xdb\xde"
 )
+
+type self struct {
+	sync.Mutex
+	path string
+}
+
+func (s self) get() string {
+	s.Lock()
+	defer s.Unlock()
+	return s.path
+}
+
+func (s self) is() bool {
+	s.Lock()
+	defer s.Unlock()
+	return s.path != ""
+}
+
+func (s *self) set(str string) {
+	s.Lock()
+	defer s.Unlock()
+	s.path = str
+}
 
 func self_check(path string) bool {
 	file, err := os.Open(path)

@@ -157,23 +157,28 @@ func tracker_main() {
 
 func main() {
 	flag.Parse()
-	self := *coolflagg
+	var myself self
+	myself.set(*coolflagg)
 
 	var tracker bool
 
 	if filepath.Base(os.Args[0]) != self_file {
+		fmt.Println("003")
 		tracker = true
 	}
 
 	if len(os.Args) > 2 {
+		fmt.Println("002")
 		tracker = true
 	}
 
-	if self != "" {
+	if myself.is() {
+		fmt.Println("001")
 		tracker = false
 	}
 
 	if tracker {
+		fmt.Println("004")
 		tracker_main()
 		return
 	}
@@ -208,7 +213,7 @@ func main() {
 
 	self_locs := []string{}
 
-	if self == "" {
+	if !myself.is() {
 
 		// look at my binary in path
 
@@ -228,13 +233,12 @@ func main() {
 		// check binary contains the magic string selfrtg
 		for i := range self_locs {
 			if self_check(self_locs[i]) {
-				self = self_locs[i]
-				//			fmt.Println("FOUND MYSELF AT ", self)
+				myself.set(self_locs[i])
 				break
 			}
 		}
 
-		if self == "" {
+		if !myself.is() {
 			fmt.Println("The `" + self_file + "` file not found.\n" +
 				"Run " + self_file + " --" + coolflag + "=/../.." + self_file)
 			return
@@ -258,7 +262,7 @@ func main() {
 	defer destroy(bin)
 
 	go loop.try_serve(looperfs{})
-	go bin.try_serve(tapperfs{r: tapperrootnode{itemz: pitems}})
+	go bin.try_serve(tapperfs{r: tapperrootnode{itemz: pitems, s: &myself}})
 
 	//wait until mounted
 	loop.check_err()
