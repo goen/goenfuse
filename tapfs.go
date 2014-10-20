@@ -111,21 +111,17 @@ func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 }
 
 func (tappertrackernode) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
-	a, err := Asset("tracker")
-	if err != nil {
-		return nil, nil //FIXME return error here
-	}
-
-	return fs.DataHandle(a), nil
+	//TODO: open self here
+	return fs.DataHandle([]byte("")), nil
 }
 
 //ok
 func (tappertrackernode) Attr() fuse.Attr {
 	a := generic_attr()
-
+	//TODO: report self size here
 	a.Inode = 2
-	a.Size = bin_tracker_size
-	a.Blocks = (bin_tracker_size / 512)
+	a.Size = 0
+	a.Blocks = (0 / 512)
 	a.Mode = 0555
 	a.Nlink = 1 // correct?//FIXME
 	return a
