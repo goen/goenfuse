@@ -35,8 +35,7 @@ type tapperfs struct {
 
 //ok
 type tapperrootnode struct {
-	dirs  uint64 // = 1 + maximum name
-	itemz [][]string
+	itemz [][]string // len(itemz) = 1 + maximum name
 }
 
 //ok
@@ -80,11 +79,7 @@ func (s tapperrootnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) 
 
 	n, err := fmt.Sscanf(name, "%02d", &i)
 
-	if s.dirs != uint64(len(s.itemz)) {
-		panic("wat the fuk")
-	}
-
-	if (err != nil) || (n != 1) || (uint64(i) >= s.dirs) {
+	if (err != nil) || (n != 1) || (i >= len(s.itemz)) {
 		return nil, fuse.ENOENT
 	}
 
@@ -100,7 +95,7 @@ func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 	dirz[1] = fuse.Dirent{Inode: 3, Name: "track", Type: fuse.DT_File}
 	dirz[2] = fuse.Dirent{Inode: 4, Name: "untrack", Type: fuse.DT_File}
 
-	end := int(s.dirs)
+	end := int(len(s.itemz))
 	if end >= 100 {
 		end = 100
 	}

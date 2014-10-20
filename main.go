@@ -258,7 +258,7 @@ func main() {
 	defer destroy(bin)
 
 	go loop.try_serve(looperfs{})
-	go bin.try_serve(tapperfs{r: tapperrootnode{dirs: uint64(len(path)), itemz: pitems}})
+	go bin.try_serve(tapperfs{r: tapperrootnode{itemz: pitems}})
 
 	//wait until mounted
 	loop.check_err()
