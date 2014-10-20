@@ -5,7 +5,6 @@ import (
 	"bazil.org/fuse/fs"
 
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 )
@@ -112,30 +111,10 @@ func (l looperfile) Attr() fuse.Attr {
 }
 
 func (l looperfile) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
+	file, err := ioutil.ReadFile(l.name)
 
-	fmt.Println("opening ", l.name)
-	l.f.Close()
-	file, err := os.Open(l.name)
-	l.f = file
-	if err != nil {
-		return nil, err
-	}
-	//	l.r = bufio.NewReader(file)
+	return fs.DataHandle(file), err
 
-	return l, nil
-}
-
-func (l looperfile) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs.Intr) fuse.Error {
-	// TODO check to see if opened?
-	_, err := l.f.Seek(req.Offset, 0)
-	if err != nil {
-		return fuse.EIO
-	}
-	_, err = io.ReadFull(l.f, resp.Data)
-	if err != nil {
-		return fuse.EIO
-	}
-	return nil
 }
 
 func (l looperfile) Write(req *fuse.WriteRequest, resp *fuse.WriteResponse, intr fs.Intr) fuse.Error {
@@ -163,11 +142,6 @@ func (l looperdir) Remove(req *fuse.RemoveRequest, intr fs.Intr) fuse.Error {
 
 func (l looperfile) Remove(req *fuse.RemoveRequest, intr fs.Intr) fuse.Error {
 	os.Remove(req.Name)
-	return nil
-}
-
-func (l looperfile) Flush(req *fuse.FlushRequest, intr fs.Intr) fuse.Error {
-	l.f.Close()
 	return nil
 }
 
