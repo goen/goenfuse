@@ -16,12 +16,13 @@ const (
 type self struct {
 	sync.Mutex
 	path string
+	size uint64
 }
 
-func (s self) get() string {
+func (s self) get() (string, uint64) {
 	s.Lock()
 	defer s.Unlock()
-	return s.path
+	return s.path, s.size
 }
 
 func (s self) is() bool {
@@ -34,6 +35,10 @@ func (s *self) set(str string) {
 	s.Lock()
 	defer s.Unlock()
 	s.path = str
+	fi, err := os.Lstat(s.path)
+	if err == nil {
+		s.size = uint64(fi.Size())
+	}
 }
 
 func self_check(path string) bool {

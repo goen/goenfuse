@@ -117,7 +117,7 @@ func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 func (t tappertrackernode) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
 	//TODO: open self here
 	// get self path here
-	name := (*t.s).get()
+	name, _ := (*t.s).get()
 
 	t.f.Close()
 	file, err := os.Open(name)
@@ -148,12 +148,14 @@ func (t tappertrackernode) Flush(req *fuse.FlushRequest, intr fs.Intr) fuse.Erro
 }
 
 //ok
-func (tappertrackernode) Attr() fuse.Attr {
+func (t tappertrackernode) Attr() fuse.Attr {
+	_, z := (*t.s).get()
+
 	a := generic_attr()
-	//TODO: report self size here
+
 	a.Inode = 2
-	a.Size = 0
-	a.Blocks = (0 / 512)
+	a.Size = z
+	a.Blocks = (z / 512)
 	a.Mode = 0555
 	a.Nlink = 1 // correct?//FIXME
 	return a
