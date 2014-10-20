@@ -5,6 +5,7 @@ import (
 	"bazil.org/fuse/fs"
 
 	"fmt"
+	"io"
 	"os"
 	"time"
 )
@@ -42,6 +43,7 @@ type tapperrootnode struct {
 //ok
 type tappertrackernode struct {
 	s *self
+	f *os.File
 }
 
 //ok
@@ -115,9 +117,34 @@ func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
 func (t tappertrackernode) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
 	//TODO: open self here
 	// get self path here
-	fmt.Println(">>>", (*t.s).get())
+	name := (*t.s).get()
 
-	return fs.DataHandle([]byte("")), nil
+	t.f.Close()
+	file, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	t.f = file
+
+	return t, nil
+}
+
+func (t tappertrackernode) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs.Intr) fuse.Error {
+	// TODO check to see if opened?
+	_, err := t.f.Seek(req.Offset, 0)
+	if err != nil {
+		return fuse.EIO
+	}
+	_, err = io.ReadFull(t.f, resp.Data)
+	if err != nil {
+		return fuse.EIO
+	}
+	return nil
+}
+
+func (t tappertrackernode) Flush(req *fuse.FlushRequest, intr fs.Intr) fuse.Error {
+	t.f.Close()
+	return nil
 }
 
 //ok
