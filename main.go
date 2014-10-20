@@ -124,10 +124,35 @@ func scan_path(p string) (items []string, has_me bool) {
 	return items, has_me
 }
 
-var species = flag.String("species", "gopher", "the species we are studying")
-
 func tracker_main() {
+	fmt.Println("HELLO FROM TRACKER")
 
+	// TODO: dump ENV
+	fmt.Println("ENV:", os.Environ())
+
+	// TODO: dump ARGS
+	fmt.Println("ARGS:", os.Args)
+
+	// TODO: dump ARGS
+	fmt.Println("EXEC:run the actual binary:", os.Args)
+
+	if filepath.Base(os.Args[0]) == "tracker" {
+		return
+	}
+	/*
+		cmd := exec.Command(os.Args[0], os.Args[1:]...)
+		err := cmd.Start()
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("Waiting for command to finish...")
+		err = cmd.Wait()
+		fmt.Println("Command finished with error: ", err)
+	*/
+	// TODO: wait
+	fmt.Println("TODO:wait for the actual binary to complete")
+	/**/
+	fmt.Println("BYE BYE FROM TRACKER")
 }
 
 func main() {
