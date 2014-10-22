@@ -2,9 +2,15 @@
 package main
 
 import (
-	"bazil.org/fuse"
-	"bazil.org/fuse/fs"
-	_ "bazil.org/fuse/fs/fstestutil"
+	"github.com/hanwen/go-fuse/fuse"
+	"github.com/hanwen/go-fuse/fuse/nodefs"
+	"github.com/hanwen/go-fuse/fuse/pathfs"
+
+	/*
+		"bazil.org/fuse"
+		"bazil.org/fuse/fs"
+		_ "bazil.org/fuse/fs/fstestutil"
+	*/
 	"flag"
 	"fmt"
 	"os"
@@ -18,7 +24,7 @@ const (
 	coolflag = "override-my-path"
 )
 
-var coolflagg = flag.String(coolflag, "", "Skip binary self-path lookup and self-check ")
+var coolflagg = flag.String(coolflag, "", "Skip binary self-path lookup and self-check, by  ")
 
 //begin ffs stuff
 
@@ -47,13 +53,25 @@ func mount(dir string) (f ffs, e error) {
 	f.lack = e != nil
 	f.dir = dir
 	if f.lack {
-		//	e = os.MkdirAll(dir, 755)
+		//	e = os.MkdirAll(dir, 755)	//this may panic
 		e = failsafe_mkdir_all(dir, 755)
 		if e != nil {
 			return f, e
 		}
 	}
-	f.c, e = fuse.Mount(f.dir)
+
+	// this is go-fuse stuff
+	var finalFs pathfs.FileSystem
+	loopbackfs := pathfs.NewLoopbackFileSystem("foo")
+	finalFs = loopbackfs
+
+	pathFs := pathfs.NewPathNodeFs(finalFs, nil)
+	connector := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
+	f.c, e = fuse.NewServer(fuse.NewRawFileSystem(connector.RawFS()),
+		f.dir, &fuse.MountOptions{SingleThreaded: true})
+	/*
+		f.c, e = fuse.Mount(f.dir)	//this is bazil stuff
+	*/
 	f.u = false
 	return f, e
 }
@@ -64,7 +82,10 @@ func (f *ffs) umount() (err error) {
 	}
 	// taken from the fs/fstestutil/mounted.go
 	for tries := 0; tries < 100; tries++ {
-		err = fuse.Unmount(f.dir)
+
+		f.c.Unmount() // go-fuse specific
+		//	err = fuse.Unmount(f.dir) // bazil-fuse specific
+
 		if err != nil {
 			time.Sleep(10 * time.Millisecond)
 			continue
@@ -75,21 +96,30 @@ func (f *ffs) umount() (err error) {
 	return err
 }
 
-func (f ffs) try_serve(s fs.FS) {
-	fs.Serve(f.c, s)
+func (f ffs) try_serve() {
+	f.c.Serve() // go-fuse specific
+	//	fs.Serve(f.c, f.s)	// bazil-fuse specific
 }
 
 func (f ffs) check_err() error {
-	<-f.c.Ready
-	if err := f.c.MountError; err != nil {
-		return err
-	}
+
+	f.c.WaitMount()
+
+	/*
+		   //this is bazil specific
+			<-f.c.Ready
+
+			if err := f.c.MountError; err != nil {
+				return err
+			}
+	*/
 	return nil
 }
 
 func destroy(f ffs) {
-	f.c.Close()
-
+	/*
+		f.c.Close()
+	*/
 	if f.lack {
 		os.RemoveAll(f.dir)
 	}
@@ -99,8 +129,10 @@ func destroy(f ffs) {
 type ffs struct {
 	dir  string
 	lack bool
-	c    *fuse.Conn
-	u    bool //umounted ok
+	//	s	fs.FS	// bazil-fuse specific
+	//	c    *fuse.Conn // bazil-fuse specific
+	c *fuse.Server // go-fuse specific
+	u bool         //umounted ok
 }
 
 func scan_path(p string) (items []string, has_me bool) {
@@ -136,9 +168,6 @@ func tracker_main() {
 	// TODO: dump ARGS
 	fmt.Println("EXEC:run the actual binary:", os.Args)
 
-	if filepath.Base(os.Args[0]) == "tracker" {
-		return
-	}
 	/*
 		cmd := exec.Command(os.Args[0], os.Args[1:]...)
 		err := cmd.Start()
@@ -164,7 +193,12 @@ func main() {
 
 	if filepath.Base(os.Args[0]) != self_file {
 		fmt.Println("003")
-		tracker = true
+		dir := which_2digit_dir()
+		if dir != 255 {
+			tracker = true
+		} else {
+			tracker = false
+		}
 	}
 
 	if len(os.Args) > 2 {
@@ -186,13 +220,13 @@ func main() {
 	// this is the path
 
 	// FIXME: load here actual env from path
-	path := []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin",
-		"/usr/bin", "/sbin", "/bin"}
+	var path []string = self_path
 
 	// load the path items from path
 
 	var pitems_array [100][]string
 	pitems := pitems_array[0:len(path)]
+	_ = pitems
 
 	var mybinwhere uint32 = 0xffff
 
@@ -261,12 +295,23 @@ func main() {
 	defer destroy(loop)
 	defer destroy(bin)
 
-	go loop.try_serve(looperfs{})
-	go bin.try_serve(tapperfs{r: tapperrootnode{itemz: pitems, s: &myself}})
+	fmt.Println("001")
+
+	/*
+		Bazil-specific
+		loop.s = looperfs{}
+		bin.s = tapperfs{r: tapperrootnode{itemz: pitems, s: &myself}}
+	*/
+
+	go loop.try_serve()
+	go bin.try_serve()
+	fmt.Println("001b")
 
 	//wait until mounted
 	loop.check_err()
 	bin.check_err()
+
+	fmt.Println("002")
 
 	for !bin.u || !loop.u {
 
@@ -275,6 +320,8 @@ func main() {
 			fmt.Println("stopped!", sig)
 			break
 		}
+
+		fmt.Println("003")
 
 		if loop.umount() != nil {
 			fmt.Println("Umounting ", loop.dir, " failed")

@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -12,6 +13,9 @@ const (
 	self_file = "goenfuse"
 	selfrtg   = "\xb8\x4c\x10\x44\x00\x00\x00\x00\x00\x00\x8b\x55\x84\xdb\xde"
 )
+
+var self_path = []string{"/usr/local/sbin", "/usr/local/bin", "/usr/sbin",
+	"/usr/bin", "/sbin", "/bin"}
 
 type self struct {
 	sync.Mutex
@@ -79,4 +83,20 @@ func self_check(path string) bool {
 		}
 	}
 	return false
+}
+
+func which_2digit_dir() uint8 {
+	p, err := os.Getwd()
+	if err != nil {
+		return 255
+	}
+
+	dir := filepath.Base(filepath.Dir(filepath.Clean(p + "/" + os.Args[0])))
+	if len(dir) != 2 {
+		return 255
+	}
+	if dir[0] < '0' || dir[0] > '9' || dir[1] < '0' || dir[1] > '9' {
+		return 255
+	}
+	return 10*(dir[0]-'0') + (dir[1] - '0')
 }
