@@ -2,17 +2,9 @@
 package main
 
 import (
-	"github.com/hanwen/go-fuse/fuse"
-	"github.com/hanwen/go-fuse/fuse/nodefs"
-	"github.com/hanwen/go-fuse/fuse/pathfs"
-
-	/*
-		"bazil.org/fuse"
-		"bazil.org/fuse/fs"
-		_ "bazil.org/fuse/fs/fstestutil"
-	*/
 	"flag"
 	"fmt"
+
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -26,7 +18,7 @@ const (
 
 var coolflagg = flag.String(coolflag, "", "Skip binary self-path lookup and self-check, by  ")
 
-//begin ffs stuff
+// workaround
 
 func failsafe_mkdir_all(dir string, perm os.FileMode) error {
 	var wg sync.WaitGroup
@@ -48,10 +40,13 @@ func failsafe_mkdir_all(dir string, perm os.FileMode) error {
 	return nil
 }
 
-func mount(dir string) (f ffs, e error) {
+//begin ffs
+
+func mount(dir string) (f Ffs, e error) {
 	_, e = os.Stat(f.dir)
 	f.lack = e != nil
 	f.dir = dir
+	f.u = false
 	if f.lack {
 		//	e = os.MkdirAll(dir, 755)	//this may panic
 		e = failsafe_mkdir_all(dir, 755)
@@ -60,32 +55,19 @@ func mount(dir string) (f ffs, e error) {
 		}
 	}
 
-	// this is go-fuse stuff
-	var finalFs pathfs.FileSystem
-	loopbackfs := pathfs.NewLoopbackFileSystem("foo")
-	finalFs = loopbackfs
+	f.monut()
 
-	pathFs := pathfs.NewPathNodeFs(finalFs, nil)
-	connector := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
-	f.c, e = fuse.NewServer(fuse.NewRawFileSystem(connector.RawFS()),
-		f.dir, &fuse.MountOptions{SingleThreaded: true})
-	/*
-		f.c, e = fuse.Mount(f.dir)	//this is bazil stuff
-	*/
-	f.u = false
 	return f, e
 }
 
-func (f *ffs) umount() (err error) {
+func (f *Ffs) umount() (err error) {
 	if f.u {
 		return nil
 	}
 	// taken from the fs/fstestutil/mounted.go
 	for tries := 0; tries < 100; tries++ {
 
-		f.c.Unmount() // go-fuse specific
-		//	err = fuse.Unmount(f.dir) // bazil-fuse specific
-
+		err := f.unmount()
 		if err != nil {
 			time.Sleep(10 * time.Millisecond)
 			continue
@@ -96,44 +78,22 @@ func (f *ffs) umount() (err error) {
 	return err
 }
 
-func (f ffs) try_serve() {
-	f.c.Serve() // go-fuse specific
-	//	fs.Serve(f.c, f.s)	// bazil-fuse specific
-}
-
-func (f ffs) check_err() error {
-
-	f.c.WaitMount()
-
-	/*
-		   //this is bazil specific
-			<-f.c.Ready
-
-			if err := f.c.MountError; err != nil {
-				return err
-			}
-	*/
-	return nil
-}
-
-func destroy(f ffs) {
-	/*
-		f.c.Close()
-	*/
+func destroy(f Ffs) {
+	destory(f)
 	if f.lack {
 		os.RemoveAll(f.dir)
 	}
 }
 
 // my fuse fs
-type ffs struct {
+type Ffs struct {
 	dir  string
 	lack bool
-	//	s	fs.FS	// bazil-fuse specific
-	//	c    *fuse.Conn // bazil-fuse specific
-	c *fuse.Server // go-fuse specific
-	u bool         //umounted ok
+	be   fbackend
+	u    bool //umounted ok
 }
+
+//end ffs
 
 func scan_path(p string) (items []string, has_me bool) {
 
@@ -303,13 +263,13 @@ func main() {
 		bin.s = tapperfs{r: tapperrootnode{itemz: pitems, s: &myself}}
 	*/
 
-	go loop.try_serve()
-	go bin.try_serve()
+	go loop.serve()
+	go bin.serve()
 	fmt.Println("001b")
 
 	//wait until mounted
-	loop.check_err()
-	bin.check_err()
+	loop.check()
+	bin.check()
 
 	fmt.Println("002")
 
