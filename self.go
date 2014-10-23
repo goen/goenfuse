@@ -98,5 +98,10 @@ func self_2digit_dir() uint8 {
 	if dir[0] < '0' || dir[0] > '9' || dir[1] < '0' || dir[1] > '9' {
 		return 255
 	}
-	return 10*(dir[0]-'0') + (dir[1] - '0')
+
+	num := 10*(dir[0]-'0') + (dir[1] - '0')
+	if int(num) > len(self_path) {
+		return 255
+	}
+	return num
 }
