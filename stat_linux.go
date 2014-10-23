@@ -1,3 +1,4 @@
+//this is the conversion from linux stat to the fuse attr
 package main
 
 import (

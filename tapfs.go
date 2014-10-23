@@ -1,3 +1,4 @@
+// this is a poor quality bazil implementation of a bin filesystem
 // +build bazil
 
 package main
@@ -15,6 +16,10 @@ import (
 const (
 	inodeoffset = 5
 )
+
+func tapcontext(i [][]string, z *self) fs.FS {
+	return tapperfs{r: tapperrootnode{itemz: i, s: z}}
+}
 
 //ok
 func generic_attr() fuse.Attr {

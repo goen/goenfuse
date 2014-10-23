@@ -1,3 +1,4 @@
+// this is a poor quality bazil implementation of a loopback filesystem
 // +build bazil
 
 package main
@@ -14,6 +15,10 @@ import (
 const (
 	loopfs_rdev = 0x70F5 //LOop-FS
 )
+
+func loopcontext() fs.FS {
+	return looperfs{}
+}
 
 //ok
 type looperfs struct {

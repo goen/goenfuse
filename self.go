@@ -1,3 +1,4 @@
+//this is the self checking code
 package main
 
 import (

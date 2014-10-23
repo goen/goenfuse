@@ -1,3 +1,4 @@
+// this is the bazil glue
 // +build bazil
 
 package main
@@ -9,12 +10,13 @@ import (
 
 func (f *Ffs) monut() (e error) {
 	f.be.c, e = fuse.Mount(f.dir)
-	f.be.s = f.stuff
 
 	return e
 }
 
-func (f *Ffs) mount() (e error) {
+func (f *Ffs) putcontext() (e error) {
+	// this fails because
+	f.be.s = fs.FS(f.stuff)
 	return nil
 }
 
@@ -41,6 +43,10 @@ func destory(f Ffs) {
 const (
 	bazilfs = true
 )
+
+type stuffer interface {
+	Root() (fs.Node, fuse.Error)
+}
 
 type fbackend struct {
 	s fs.FS

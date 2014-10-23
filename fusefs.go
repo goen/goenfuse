@@ -1,3 +1,4 @@
+// this is the go-fuse glue
 // +build !bazil
 
 package main
@@ -8,9 +9,21 @@ import (
 	"github.com/hanwen/go-fuse/fuse/pathfs"
 )
 
+//
+
+func tapcontext(i interface{}, z interface{}) interface{} {
+	return nil
+}
+
+func loopcontext() interface{} {
+	return nil
+}
+
 // this is not used in
 
-type looperfs struct{}
+type looperfs struct {
+	path string
+}
 type tapperrootnode struct {
 	itemz interface{}
 	s     interface{}
@@ -21,7 +34,9 @@ func (f *Ffs) monut() (e error) {
 	return nil
 }
 
-func (f *Ffs) mount() (e error) {
+func (f *Ffs) putcontext() (e error) {
+	//	switch
+
 	pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
 	con := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
 	f.be.gc, e = fuse.NewServer(fuse.NewRawFileSystem(con.RawFS()),
@@ -50,6 +65,8 @@ func destory(f Ffs) {
 const (
 	bazilfs = false
 )
+
+type stuffer interface{}
 
 type fbackend struct {
 	gc *fuse.Server

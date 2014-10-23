@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"sync"
-	"time"
 )
 
 const (
@@ -17,85 +16,6 @@ const (
 )
 
 var coolflagg = flag.String(coolflag, "", "Skip binary self-path lookup and self-check, by  ")
-
-// workaround
-
-func failsafe_mkdir_all(dir string, perm os.FileMode) error {
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	panik := true
-
-	go func(dir string, panik *bool) {
-		defer wg.Done()
-		if os.MkdirAll(dir, perm) == nil {
-			*panik = false
-		}
-	}(dir, &panik)
-
-	wg.Wait()
-	if panik {
-		return fmt.Errorf("Failsafe make directory failed.")
-	}
-	return nil
-}
-
-//begin ffs
-
-func mount(dir string) (f Ffs, e error) {
-	_, e = os.Stat(f.dir)
-	f.lack = e != nil
-	f.dir = dir
-	f.u = false
-	if f.lack {
-		//	e = os.MkdirAll(dir, 755)	//this may panic
-		e = failsafe_mkdir_all(dir, 755)
-		if e != nil {
-			return f, e
-		}
-		fmt.Println("maked ", dir)
-	}
-
-	f.monut()
-
-	return f, e
-}
-
-func (f *Ffs) umount() (err error) {
-	if f.u {
-		return nil
-	}
-	// taken from the fs/fstestutil/mounted.go
-	for tries := 0; tries < 100; tries++ {
-
-		err := f.unmount()
-		if err != nil {
-			time.Sleep(10 * time.Millisecond)
-			continue
-		}
-		f.u = true
-		return nil
-	}
-	return err
-}
-
-func destroy(f Ffs) {
-	destory(f)
-	if f.lack {
-		os.RemoveAll(f.dir)
-	}
-}
-
-// my fuse fs
-type Ffs struct {
-	dir   string
-	lack  bool
-	be    fbackend
-	u     bool //umounted ok
-	stuff interface{}
-}
-
-//end ffs
 
 func scan_path(p string) (items []string, has_me bool) {
 
@@ -248,11 +168,19 @@ func main() {
 	loop, errl := mount(mpoint_gloop)
 	bin, errb := mount(mpoint_gbin)
 
+	//bazil specific, before the mount
+	loop.stuff = loopcontext()
+	bin.stuff = tapcontext(pitems, &myself)
+
+	//gofuse specific, call context
+	//	loop.stuff = looperfs{path: "."}
+	//	bin.stuff = 31337
+
 	if errl == nil {
-		errl = loop.mount()
+		errl = loop.putcontext()
 	}
 	if errb == nil {
-		errb = bin.mount()
+		errb = bin.putcontext()
 	}
 
 	if errl != nil || errb != nil {
@@ -268,10 +196,6 @@ func main() {
 	}
 	defer destroy(loop)
 	defer destroy(bin)
-
-	//bazil specific
-	loop.stuff = looperfs{}
-	bin.stuff = tapperfs{r: tapperrootnode{itemz: pitems, s: &myself}}
 
 	go loop.serve()
 	go bin.serve()
