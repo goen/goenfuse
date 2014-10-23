@@ -85,7 +85,7 @@ func self_check(path string) bool {
 	return false
 }
 
-func which_2digit_dir() uint8 {
+func self_2digit_dir() uint8 {
 	p, err := os.Getwd()
 	if err != nil {
 		return 255

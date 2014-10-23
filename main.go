@@ -193,7 +193,7 @@ func main() {
 
 	if filepath.Base(os.Args[0]) != self_file {
 		fmt.Println("003")
-		dir := which_2digit_dir()
+		dir := self_2digit_dir()
 		if dir != 255 {
 			tracker = true
 		} else {
