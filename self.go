@@ -46,6 +46,9 @@ func (s *self) set(str string) {
 }
 
 func self_check(path string) bool {
+	if !selfcheck {
+		return true
+	}
 	file, err := os.Open(path)
 	if err != nil {
 		return false
