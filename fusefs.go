@@ -34,6 +34,10 @@ func destory(f Ffs) {
 	//XXX go-fuse destructor
 }
 
+const (
+	bazilfs = false
+)
+
 type fbackend struct {
 	gc *fuse.Server
 }

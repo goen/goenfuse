@@ -8,7 +8,14 @@ import (
 )
 
 func (f *Ffs) monut() (e error) {
-	f.be.bc, e = fuse.Mount(f.dir)
+	f.be.c, e = fuse.Mount(f.dir)
+	switch f.dir {
+	case mpoint_gloop:
+		f.be.s = looperfs{}
+	case mpoint_gbin:
+		f.be.s = tapperfs{r: tapperrootnode{itemz: f.bi, s: f.bs}}
+	}
+
 	return e
 }
 
@@ -17,22 +24,26 @@ func (f *Ffs) unmount() (err error) {
 }
 
 func (f Ffs) check() error {
-	<-f.be.bc.Ready
-	if err := f.be.bc.MountError; err != nil {
+	<-f.be.c.Ready
+	if err := f.be.c.MountError; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (f Ffs) serve() {
-	fs.Serve(f.be.bc, f.be.bs)
+	fs.Serve(f.be.c, f.be.s)
 }
 
 func destory(f Ffs) {
-	f.be.bc.Close()
+	f.be.c.Close()
 }
 
+const (
+	bazilfs = true
+)
+
 type fbackend struct {
-	bs fs.FS
-	bc *fuse.Conn
+	s fs.FS
+	c *fuse.Conn
 }

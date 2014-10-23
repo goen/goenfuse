@@ -53,6 +53,7 @@ func mount(dir string) (f Ffs, e error) {
 		if e != nil {
 			return f, e
 		}
+		fmt.Println("maked ", dir)
 	}
 
 	f.monut()
@@ -91,6 +92,8 @@ type Ffs struct {
 	lack bool
 	be   fbackend
 	u    bool //umounted ok
+	bi   [][]string
+	bs   *self
 }
 
 //end ffs
@@ -246,6 +249,9 @@ func main() {
 	loop, errl := mount(mpoint_gloop)
 	bin, errb := mount(mpoint_gbin)
 
+	bin.bi = pitems
+	bin.bs = &myself
+
 	if errl != nil || errb != nil {
 		fmt.Println("Mount failed: ", errl)
 		fmt.Println("Try umounting /dev/fuse")
@@ -255,23 +261,12 @@ func main() {
 	defer destroy(loop)
 	defer destroy(bin)
 
-	fmt.Println("001")
-
-	/*
-		Bazil-specific
-		loop.s = looperfs{}
-		bin.s = tapperfs{r: tapperrootnode{itemz: pitems, s: &myself}}
-	*/
-
 	go loop.serve()
 	go bin.serve()
-	fmt.Println("001b")
 
 	//wait until mounted
 	loop.check()
 	bin.check()
-
-	fmt.Println("002")
 
 	for !bin.u || !loop.u {
 
@@ -280,8 +275,6 @@ func main() {
 			fmt.Println("stopped!", sig)
 			break
 		}
-
-		fmt.Println("003")
 
 		if loop.umount() != nil {
 			fmt.Println("Umounting ", loop.dir, " failed")
