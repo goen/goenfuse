@@ -50,14 +50,6 @@ func (s Stat) Nlink_() uint32 { // number of links
 	return uint32(s.Nlink)
 }
 
-/*
-func (s Stat)     Uid   () uint32     { // owner uid
-	return s.Uid
-}
-func (s Stat)     Gid   () uint32     { // group gid
-	return s.Gid
-}
-*/
 func (s Stat) Rdev_() uint32 { // device numbers
 	// FIXME: why bazil fuse nlink is only 32bit? bug?
 	return uint32(s.Rdev)
