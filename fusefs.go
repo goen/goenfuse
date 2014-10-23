@@ -8,10 +8,23 @@ import (
 	"github.com/hanwen/go-fuse/fuse/pathfs"
 )
 
+// this is not used in
+
+type looperfs struct{}
+type tapperrootnode struct {
+	itemz interface{}
+	s     interface{}
+}
+type tapperfs struct{ r tapperrootnode }
+
 func (f *Ffs) monut() (e error) {
-	pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"), nil)
-	connector := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
-	f.be.gc, e = fuse.NewServer(fuse.NewRawFileSystem(connector.RawFS()),
+	return nil
+}
+
+func (f *Ffs) mount() (e error) {
+	pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
+	con := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
+	f.be.gc, e = fuse.NewServer(fuse.NewRawFileSystem(con.RawFS()),
 		f.dir, &fuse.MountOptions{SingleThreaded: true})
 	return e
 }

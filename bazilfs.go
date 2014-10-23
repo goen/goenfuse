@@ -9,14 +9,13 @@ import (
 
 func (f *Ffs) monut() (e error) {
 	f.be.c, e = fuse.Mount(f.dir)
-	switch f.dir {
-	case mpoint_gloop:
-		f.be.s = looperfs{}
-	case mpoint_gbin:
-		f.be.s = tapperfs{r: tapperrootnode{itemz: f.bi, s: f.bs}}
-	}
+	f.be.s = f.stuff
 
 	return e
+}
+
+func (f *Ffs) mount() (e error) {
+	return nil
 }
 
 func (f *Ffs) unmount() (err error) {

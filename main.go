@@ -88,12 +88,11 @@ func destroy(f Ffs) {
 
 // my fuse fs
 type Ffs struct {
-	dir  string
-	lack bool
-	be   fbackend
-	u    bool //umounted ok
-	bi   [][]string
-	bs   *self
+	dir   string
+	lack  bool
+	be    fbackend
+	u     bool //umounted ok
+	stuff interface{}
 }
 
 //end ffs
@@ -249,17 +248,30 @@ func main() {
 	loop, errl := mount(mpoint_gloop)
 	bin, errb := mount(mpoint_gbin)
 
-	bin.bi = pitems
-	bin.bs = &myself
+	if errl == nil {
+		errl = loop.mount()
+	}
+	if errb == nil {
+		errb = bin.mount()
+	}
 
 	if errl != nil || errb != nil {
 		fmt.Println("Mount failed: ", errl)
-		fmt.Println("Try umounting /dev/fuse")
+		fmt.Println("Already mounted or stale mount")
+		if errl == nil {
+			destroy(loop)
+		}
+		if errb == nil {
+			destroy(bin)
+		}
 		return
 	}
-
 	defer destroy(loop)
 	defer destroy(bin)
+
+	//bazil specific
+	loop.stuff = looperfs{}
+	bin.stuff = tapperfs{r: tapperrootnode{itemz: pitems, s: &myself}}
 
 	go loop.serve()
 	go bin.serve()
