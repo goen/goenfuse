@@ -34,12 +34,49 @@ type tapperdirnode struct {
 	itemz []string
 }
 
+type tapperbinlink struct {
+	nodefs.Node
+	inode uint64
+}
+
 func nrn(s *self) *tappertrackernode {
 	return &tappertrackernode{Node: nodefs.NewDefaultNode(), self: s}
 }
 
 func ndn(i int, itemz []string) *tapperdirnode {
 	return &tapperdirnode{Node: nodefs.NewDefaultNode(), i: uint64(i), itemz: itemz}
+}
+
+func nln(inode uint64) *tapperbinlink {
+	return &tapperbinlink{Node: nodefs.NewDefaultNode(), inode: uint64(inode)}
+}
+
+func (s tapperdirnode) OpenDir(context *fuse.Context) ([]fuse.DirEntry, fuse.Status) {
+	var foobar []fuse.DirEntry
+
+	//	ibase := (s.i << 18) + 128
+
+	for i := range s.itemz {
+		item := fuse.DirEntry{Name: s.itemz[i], Mode: 0555}
+		foobar = append(foobar, item)
+	}
+	return foobar, fuse.OK
+}
+
+func (s tapperdirnode) Lookup(out *fuse.Attr, name string, context *fuse.Context) (node *nodefs.Inode, code fuse.Status) {
+	ibase := (s.i << 18) + 128
+
+	// TODO: binary search
+	for i := range s.itemz {
+		if name == s.itemz[i] {
+
+			ch := s.Inode().NewChild(name, false, nln(ibase+uint64(i)))
+
+			return ch, fuse.OK
+		}
+	}
+
+	return nil, fuse.ENOSYS
 }
 
 func (r tapper_root) OpenDir(context *fuse.Context) ([]fuse.DirEntry, fuse.Status) {
