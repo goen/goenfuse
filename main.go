@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"sync"
+
+	"bitbucket.org/kardianos/osext"
 )
 
 const (
@@ -131,6 +133,12 @@ func main() {
 
 	if !myself.is() {
 
+		// lookup by readlink -f /proc/$pid/exe
+		myloc, err2 := osext.Executable()
+		if err2 != nil {
+			self_locs = append(self_locs, myloc)
+		}
+
 		// look at my binary in path
 
 		if mybinwhere < uint32(len(path)) {
@@ -143,8 +151,6 @@ func main() {
 		if err == nil {
 			self_locs = append(self_locs, pwd+"/"+self_file, pwd+"/"+os.Args[0])
 		}
-
-		// consider add lookup by readlink -f /proc/$pid/exe
 
 		// check binary contains the magic string selfrtg
 		for i := range self_locs {

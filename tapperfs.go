@@ -130,11 +130,25 @@ func (tapperdirnode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Con
 	return fuse.OK
 }
 func (t tappertrackernode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
+	_, size := t.self.get()
 	out.Mode = fuse.S_IFREG | 0555
-	out.Size = 0
+	out.Size = uint64(size)
 	return fuse.OK
 }
+func (tappertrackernode) Open(flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
+	//	os.Open()
 
+	return nil, fuse.OK
+}
+func (tappertrackernode) Read(file nodefs.File, dest []byte, off int64, context *fuse.Context) (fuse.ReadResult, fuse.Status) {
+	if file != nil {
+		return file.Read(dest, off)
+	}
+	return nil, fuse.ENOSYS
+}
+func (tappertrackernode) Flush(file nodefs.File, openFlags uint32, context *fuse.Context) (code fuse.Status) {
+	return fuse.ENOSYS
+}
 func (tapperbinlink) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
 
 	out.Mode = fuse.S_IFLNK | 0555
@@ -142,11 +156,6 @@ func (tapperbinlink) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Con
 	return fuse.OK
 }
 
-func (tapperbinlink) Access(mode uint32, context *fuse.Context) (code fuse.Status) {
-	fmt.Println("(tapperbinlink) Access(mode uint32, context *fuse.Context) (code fuse.Status)\n")
-
-	return fuse.ENOSYS
-}
 func (tapperbinlink) Readlink(c *fuse.Context) ([]byte, fuse.Status) {
 	return []byte("../tracker"), fuse.OK
 }
