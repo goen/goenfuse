@@ -6,7 +6,7 @@ package main
 import (
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
-	"github.com/hanwen/go-fuse/fuse/pathfs"
+	//	"github.com/hanwen/go-fuse/fuse/pathfs"
 )
 
 //
@@ -17,6 +17,15 @@ func tapcontext(i interface{}, z interface{}) interface{} {
 
 func loopcontext() interface{} {
 	return int(0)
+}
+
+////////////////////////////////////////////
+
+type foo struct {
+	nodefs.Node
+}
+type bar struct {
+	nodefs.Node
 }
 
 // this is not used in
@@ -30,6 +39,8 @@ type tapperrootnode struct {
 }
 type tapperfs struct{ r tapperrootnode }
 
+////////////////////////////////////////////
+
 func (f *Ffs) monut() (e error) {
 	return nil
 }
@@ -37,17 +48,34 @@ func (f *Ffs) monut() (e error) {
 func (f *Ffs) putcontext() (e error) {
 	what := f.stuff.(int)
 
+	var my nodefs.Node
+
 	if what == 0 {
-		pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
-		con := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
-		f.be.gc, e = fuse.NewServer(fuse.NewRawFileSystem(con.RawFS()),
-			f.dir, &fuse.MountOptions{SingleThreaded: true})
+
+		my = &foo{nodefs.NewDefaultNode()}
+		/*
+			pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
+		*/
+
 	} else {
-		pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
-		con := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
-		f.be.gc, e = fuse.NewServer(fuse.NewRawFileSystem(con.RawFS()),
-			f.dir, &fuse.MountOptions{SingleThreaded: true})
+
+		my = &bar{nodefs.NewDefaultNode()}
+		/*
+			pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
+
+		*/
+
 	}
+
+	con := nodefs.NewFileSystemConnector(my, nil)
+	raw := fuse.NewRawFileSystem(con.RawFS())
+	optz := &fuse.MountOptions{SingleThreaded: true}
+
+	f.be.gc, e = fuse.NewServer(raw, f.dir, optz)
+	//	f.be.gc, _, e = nodefs.MountRoot(f.dir, /*root node*/, nil)
+
+	//(*fuse.Server, *FileSystemConnector, error)
+
 	return e
 }
 
