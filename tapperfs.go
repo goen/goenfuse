@@ -104,7 +104,7 @@ func (r tapper_root) OpenDir(context *fuse.Context) ([]fuse.DirEntry, fuse.Statu
 
 func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) (node *nodefs.Inode, code fuse.Status) {
 	if name == "tracker" || name == ".track" || name == ".untrack" {
-		out.Mode = fuse.S_IFREG | 0644
+		out.Mode = fuse.S_IFLNK
 		ch := r.Inode().NewChild(name, false, nrn(r.self))
 		return ch, fuse.OK
 	}
@@ -117,7 +117,7 @@ func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) 
 		return nil, fuse.ENOENT
 	}
 
-	out.Mode = fuse.S_IFDIR | 0755
+	out.Mode = fuse.S_IFDIR
 	out.Size = 4096
 	ch := r.Inode().NewChild(name, true, ndn(i, r.itemz[i]))
 
@@ -129,11 +129,26 @@ func (tapperdirnode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Con
 
 	return fuse.OK
 }
-func (tappertrackernode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
-
-	out.Mode = fuse.S_IFREG | 0644
-
+func (t tappertrackernode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
+	out.Mode = fuse.S_IFREG | 0555
+	out.Size = 0
 	return fuse.OK
+}
+
+func (tapperbinlink) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
+
+	out.Mode = fuse.S_IFLNK | 0555
+	out.Size = 10
+	return fuse.OK
+}
+
+func (tapperbinlink) Access(mode uint32, context *fuse.Context) (code fuse.Status) {
+	fmt.Println("(tapperbinlink) Access(mode uint32, context *fuse.Context) (code fuse.Status)\n")
+
+	return fuse.ENOSYS
+}
+func (tapperbinlink) Readlink(c *fuse.Context) ([]byte, fuse.Status) {
+	return []byte("../tracker"), fuse.OK
 }
 
 func (tapper_root) OnUnmount() {
