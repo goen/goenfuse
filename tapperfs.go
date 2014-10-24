@@ -119,7 +119,7 @@ func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) 
 
 	out.Mode = fuse.S_IFDIR | 0755
 	out.Size = 4096
-	ch := r.Inode().NewChild(name, false, ndn(i, r.itemz[i]))
+	ch := r.Inode().NewChild(name, true, ndn(i, r.itemz[i]))
 
 	return ch, fuse.OK
 }
