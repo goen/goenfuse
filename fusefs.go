@@ -9,23 +9,12 @@ import (
 	//	"github.com/hanwen/go-fuse/fuse/pathfs"
 )
 
-//
-
 func tapcontext(i interface{}, z interface{}) interface{} {
 	return int(1)
 }
 
 func loopcontext() interface{} {
 	return int(0)
-}
-
-////////////////////////////////////////////
-
-type foo struct {
-	nodefs.Node
-}
-type bar struct {
-	nodefs.Node
 }
 
 // this is not used in
@@ -51,20 +40,9 @@ func (f *Ffs) putcontext() (e error) {
 	var my nodefs.Node
 
 	if what == 0 {
-
-		my = &foo{nodefs.NewDefaultNode()}
-		/*
-			pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
-		*/
-
+		my = &tapper_root{nodefs.NewDefaultNode()}
 	} else {
-
-		my = &bar{nodefs.NewDefaultNode()}
-		/*
-			pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
-
-		*/
-
+		my = &looper_root{nodefs.NewDefaultNode()}
 	}
 
 	con := nodefs.NewFileSystemConnector(my, nil)
