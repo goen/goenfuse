@@ -7,26 +7,9 @@ import (
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	//	"github.com/hanwen/go-fuse/fuse/pathfs"
+	"reflect"
+	//	"fmt"
 )
-
-func tapcontext(i interface{}, z interface{}) interface{} {
-	return int(1)
-}
-
-func loopcontext() interface{} {
-	return int(0)
-}
-
-// this is not used in
-
-type looperfs struct {
-	path string
-}
-type tapperrootnode struct {
-	itemz interface{}
-	s     interface{}
-}
-type tapperfs struct{ r tapperrootnode }
 
 ////////////////////////////////////////////
 
@@ -35,14 +18,16 @@ func (f *Ffs) monut() (e error) {
 }
 
 func (f *Ffs) putcontext() (e error) {
-	what := f.stuff.(int)
-
+	var what tapper_root
 	var my nodefs.Node
 
-	if what == 0 {
-		my = &tapper_root{nodefs.NewDefaultNode()}
+	if reflect.TypeOf(what) == reflect.TypeOf(f.stuff) {
+		stuff := (f.stuff.(tapper_root))
+
+		my = &tapper_root{Node: nodefs.NewDefaultNode(),
+			itemz: stuff.itemz, self: stuff.self}
 	} else {
-		my = &looper_root{nodefs.NewDefaultNode()}
+		my = &looper_root{Node: nodefs.NewDefaultNode()}
 	}
 
 	con := nodefs.NewFileSystemConnector(my, nil)
@@ -74,10 +59,6 @@ func (f Ffs) check() error {
 func destory(f Ffs) {
 	//XXX go-fuse destructor
 }
-
-const (
-	bazilfs = false
-)
 
 type stuffer interface {
 }

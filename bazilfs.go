@@ -39,10 +39,6 @@ func destory(f Ffs) {
 	f.be.c.Close()
 }
 
-const (
-	bazilfs = true
-)
-
 type stuffer interface {
 	Root() (fs.Node, fuse.Error)
 }

@@ -168,13 +168,8 @@ func main() {
 	loop, errl := mount(mpoint_gloop)
 	bin, errb := mount(mpoint_gbin)
 
-	//bazil specific, before the mount
 	loop.stuff = loopcontext()
 	bin.stuff = tapcontext(pitems, &myself)
-
-	//gofuse specific, call context
-	//	loop.stuff = looperfs{path: "."}
-	//	bin.stuff = 31337
 
 	if errl == nil {
 		errl = loop.putcontext()
