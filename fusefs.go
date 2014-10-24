@@ -12,11 +12,11 @@ import (
 //
 
 func tapcontext(i interface{}, z interface{}) interface{} {
-	return nil
+	return int(1)
 }
 
 func loopcontext() interface{} {
-	return nil
+	return int(0)
 }
 
 // this is not used in
@@ -35,12 +35,19 @@ func (f *Ffs) monut() (e error) {
 }
 
 func (f *Ffs) putcontext() (e error) {
-	//	switch
+	what := f.stuff.(int)
 
-	pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
-	con := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
-	f.be.gc, e = fuse.NewServer(fuse.NewRawFileSystem(con.RawFS()),
-		f.dir, &fuse.MountOptions{SingleThreaded: true})
+	if what == 0 {
+		pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
+		con := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
+		f.be.gc, e = fuse.NewServer(fuse.NewRawFileSystem(con.RawFS()),
+			f.dir, &fuse.MountOptions{SingleThreaded: true})
+	} else {
+		pathFs := pathfs.NewPathNodeFs(pathfs.NewLoopbackFileSystem("foo"+f.dir), nil)
+		con := nodefs.NewFileSystemConnector(pathFs.Root(), nil)
+		f.be.gc, e = fuse.NewServer(fuse.NewRawFileSystem(con.RawFS()),
+			f.dir, &fuse.MountOptions{SingleThreaded: true})
+	}
 	return e
 }
 
@@ -66,7 +73,8 @@ const (
 	bazilfs = false
 )
 
-type stuffer interface{}
+type stuffer interface {
+}
 
 type fbackend struct {
 	gc *fuse.Server

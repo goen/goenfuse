@@ -8,8 +8,11 @@ import (
 	"time"
 )
 
-// workaround
+/*
+the order is: mount, putcontext, serve, check, umount, destroy
+*/
 
+// workaround for mkdir panic
 func failsafe_mkdir_all(dir string, perm os.FileMode) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -29,8 +32,6 @@ func failsafe_mkdir_all(dir string, perm os.FileMode) error {
 	}
 	return nil
 }
-
-//begin ffs
 
 func mount(dir string) (f Ffs, e error) {
 	_, e = os.Stat(f.dir)
@@ -84,5 +85,3 @@ type Ffs struct {
 	u     bool //umounted ok
 	stuff stuffer
 }
-
-//end ffs

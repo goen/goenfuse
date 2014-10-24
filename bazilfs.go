@@ -15,7 +15,6 @@ func (f *Ffs) monut() (e error) {
 }
 
 func (f *Ffs) putcontext() (e error) {
-	// this fails because
 	f.be.s = fs.FS(f.stuff)
 	return nil
 }
