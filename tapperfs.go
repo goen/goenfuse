@@ -40,7 +40,13 @@ type tapperbinlink struct {
 }
 
 func nrn(s *self) *tappertrackernode {
-	return &tappertrackernode{Node: nodefs.NewDefaultNode(), self: s}
+	name, _ := s.get()
+	f, err := os.Open(name)
+	if err != nil {
+		f = nil
+	}
+
+	return &tappertrackernode{Node: nodefs.NewDefaultNode(), self: s, f: f}
 }
 
 func ndn(i int, itemz []string) *tapperdirnode {
@@ -135,18 +141,18 @@ func (t tappertrackernode) GetAttr(out *fuse.Attr, file nodefs.File, context *fu
 	out.Size = uint64(size)
 	return fuse.OK
 }
-func (tappertrackernode) Open(flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
-	//	os.Open()
-
-	return nil, fuse.OK
+func (t tappertrackernode) Open(flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
+	return nodefs.NewDefaultFile(), fuse.OK
 }
-func (tappertrackernode) Read(file nodefs.File, dest []byte, off int64, context *fuse.Context) (fuse.ReadResult, fuse.Status) {
-	if file != nil {
-		return file.Read(dest, off)
+func (t tappertrackernode) Read(file nodefs.File, dest []byte, off int64, context *fuse.Context) (fuse.ReadResult, fuse.Status) {
+	if t.f != nil {
+		t.f.ReadAt(dest, off)
+		return fuse.ReadResultData(dest), fuse.OK
 	}
 	return nil, fuse.ENOSYS
 }
 func (tappertrackernode) Flush(file nodefs.File, openFlags uint32, context *fuse.Context) (code fuse.Status) {
+	fmt.Println("Flush(file nodefs.File, openFlags")
 	return fuse.ENOSYS
 }
 func (tapperbinlink) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
