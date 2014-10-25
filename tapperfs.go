@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+const (
+	foffset = 1
+)
+
 func tapcontext(i [][]string, z *self) nodefs.Node {
 	return tapper_root{itemz: i, self: z}
 }
@@ -86,12 +90,9 @@ func (s tapperdirnode) Lookup(out *fuse.Attr, name string, context *fuse.Context
 }
 
 func (r tapper_root) OpenDir(context *fuse.Context) ([]fuse.DirEntry, fuse.Status) {
-	var dirz [103]fuse.DirEntry
-	foffset := 3
+	var dirz [100 + foffset]fuse.DirEntry
 
 	dirz[0] = fuse.DirEntry{Name: "tracker", Mode: 0555}
-	dirz[1] = fuse.DirEntry{Name: ".track", Mode: 0555}
-	dirz[2] = fuse.DirEntry{Name: ".untrack", Mode: 0555}
 
 	end := int(len(r.itemz))
 	if end >= 100 {
@@ -109,7 +110,7 @@ func (r tapper_root) OpenDir(context *fuse.Context) ([]fuse.DirEntry, fuse.Statu
 }
 
 func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) (node *nodefs.Inode, code fuse.Status) {
-	if name == "tracker" || name == ".track" || name == ".untrack" {
+	if name == "tracker" {
 		out.Mode = fuse.S_IFLNK
 		ch := r.Inode().NewChild(name, false, nrn(r.self))
 		return ch, fuse.OK
@@ -151,10 +152,7 @@ func (t tappertrackernode) Read(file nodefs.File, dest []byte, off int64, contex
 	}
 	return nil, fuse.ENOSYS
 }
-func (tappertrackernode) Flush(file nodefs.File, openFlags uint32, context *fuse.Context) (code fuse.Status) {
-	fmt.Println("Flush(file nodefs.File, openFlags")
-	return fuse.ENOSYS
-}
+
 func (tapperbinlink) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
 
 	out.Mode = fuse.S_IFLNK | 0555
