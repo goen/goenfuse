@@ -6,7 +6,7 @@ package main
 import (
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
-	//	"github.com/hanwen/go-fuse/fuse/pathfs"
+	"github.com/hanwen/go-fuse/fuse/pathfs"
 	"reflect"
 	//	"fmt"
 )
@@ -27,7 +27,11 @@ func (f *Ffs) putcontext() (e error) {
 		my = &tapper_root{Node: nodefs.NewDefaultNode(),
 			itemz: stuff.itemz, self: stuff.self}
 	} else {
-		my = &looper_root{Node: nodefs.NewDefaultNode()}
+
+		finalFs := NewLooperFileSystem("foo")
+		pathFs := pathfs.NewPathNodeFs(finalFs, nil)
+
+		my = pathFs.Root()
 	}
 
 	con := nodefs.NewFileSystemConnector(my, nil)
