@@ -72,7 +72,19 @@ func (f *Ffs) umount() (err error) {
 func destroy(f Ffs) {
 	destory(f)
 	if f.lack {
-		os.RemoveAll(f.dir)
+		os.Chmod(f.dir, 0777)
+		d, err := os.Open(f.dir)
+		if err != nil {
+			fmt.Println("WHAT THE FUCK ", f.dir)
+			return
+		}
+		fi, err := d.Readdir(1)
+		d.Close()
+
+		if len(fi) == 0 {
+			os.RemoveAll(f.dir)
+		}
+		fmt.Println("There's something ", fi)
 	}
 }
 
