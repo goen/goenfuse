@@ -68,38 +68,37 @@ func tracker_main() {
 	fmt.Println("BYE BYE FROM TRACKER")
 }
 
-func main() {
-	flag.Parse()
-	var myself self
-	myself.set(*coolflagg)
 
+
+
+func main() {
 	var tracker bool
 
 	if filepath.Base(os.Args[0]) != self_file {
-		fmt.Println("003")
-		dir := self_2digit_dir()
-		if dir != 255 {
-			tracker = true
-		} else {
-			tracker = false
-		}
+		tracker = (self_2digit_dir() != 255)
 	}
 
 	if len(os.Args) > 2 {
-		fmt.Println("002")
 		tracker = true
 	}
 
-	if myself.is() {
-		fmt.Println("001")
+	if selfer() {
+		tracker = true
+	}
+
+	if selfish_arg() {
 		tracker = false
 	}
 
 	if tracker {
-		fmt.Println("004")
 		tracker_main()
 		return
 	}
+
+	// welcome to the fuse part
+	flag.Parse()
+	var myself self
+	myself.set(*coolflagg)
 
 	// this is the path
 

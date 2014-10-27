@@ -2,6 +2,8 @@
 package main
 
 import (
+	"bitbucket.org/kardianos/osext"
+
 	"bufio"
 	"bytes"
 	"os"
@@ -95,13 +97,41 @@ func self_check(path string) bool {
 	return false
 }
 
+func selfish_arg() bool {
+	if len(os.Args) != 2  {
+		return false
+	}
+
+	g := os.Args[1]
+	l := len(coolflag) + 2
+
+	if len(g) < l {
+		return false
+	}
+
+	return bytes.Equal([]byte(g[0:l]), []byte("--" + coolflag))
+}
+
+func selfer() bool {
+	myloc, err2 := osext.Executable()
+	if err2 != nil {
+		return false
+	}
+
+	dir := filepath.Base(filepath.Dir(myloc))
+
+	return dir == mpoint_gbin
+}
+
+
 func self_2digit_dir() uint8 {
-	p, err := os.Getwd()
-	if err != nil {
+	// lookup by readlink -f /proc/$pid/exe
+	myloc, err2 := osext.Executable()
+	if err2 != nil {
 		return 255
 	}
 
-	dir := filepath.Base(filepath.Dir(filepath.Clean(p + "/" + os.Args[0])))
+	dir := filepath.Base(filepath.Dir(myloc))
 	if len(dir) != 2 {
 		return 255
 	}
