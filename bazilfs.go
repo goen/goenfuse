@@ -8,6 +8,11 @@ import (
 	"bazil.org/fuse/fs"
 )
 
+func (Ffs) umt3() int {
+	//unmount retries
+	return 100
+}
+
 func (f *Ffs) monut() (e error) {
 	f.be.c, e = fuse.Mount(f.dir)
 

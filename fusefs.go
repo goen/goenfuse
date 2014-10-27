@@ -13,6 +13,11 @@ import (
 
 ////////////////////////////////////////////
 
+func (Ffs) umt3() int {
+	//unmount retries
+	return 3
+}
+
 func (f *Ffs) monut() (e error) {
 	return nil
 }

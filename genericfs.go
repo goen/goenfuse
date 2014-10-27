@@ -51,16 +51,35 @@ func mount(dir string) (f Ffs, e error) {
 	return f, e
 }
 
+func is_empty(dir string) bool {
+	os.Chmod(dir, 0777)
+	d, err := os.Open(dir)
+	if err != nil {
+		return false
+	}
+	fi, err := d.Readdir(3)
+	d.Close()
+	if len(fi) == 0 {
+		return true
+	}
+	return false
+}
+
 func (f *Ffs) umount() (err error) {
 	if f.u {
 		return nil
 	}
 	// taken from the fs/fstestutil/mounted.go
-	for tries := 0; tries < 100; tries++ {
+	for tries := 0; tries < f.umt3(); tries++ {
 
 		err := f.unmount()
 		if err != nil {
 			time.Sleep(10 * time.Millisecond)
+			continue
+		}
+		// mount point must be empty after an umount
+		if !is_empty(f.dir) {
+			err = fmt.Errorf("Directory is not empty")
 			continue
 		}
 		f.u = true
@@ -72,19 +91,7 @@ func (f *Ffs) umount() (err error) {
 func destroy(f Ffs) {
 	destory(f)
 	if f.lack {
-		os.Chmod(f.dir, 0777)
-		d, err := os.Open(f.dir)
-		if err != nil {
-			fmt.Println("WHAT THE FUCK ", f.dir)
-			return
-		}
-		fi, err := d.Readdir(1)
-		d.Close()
-
-		if len(fi) == 0 {
-			os.RemoveAll(f.dir)
-		}
-		fmt.Println("There's something ", fi)
+		os.RemoveAll(f.dir)
 	}
 }
 
