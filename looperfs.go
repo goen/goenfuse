@@ -55,6 +55,10 @@ func (fs *LooperFileSystem) GetAttr(name string, context *fuse.Context) (a *fuse
 	if err != nil {
 		return nil, fuse.ToStatus(err)
 	}
+	if st.Ino == 1 {
+		return nil, fuse.ENOENT
+	}
+
 	a = &fuse.Attr{}
 	a.FromStat(&st)
 	return a, fuse.OK
@@ -75,11 +79,20 @@ func (fs *LooperFileSystem) OpenDir(name string, context *fuse.Context) (stream 
 			if infos[i] == nil {
 				continue
 			}
+
+
+
 			n := infos[i].Name()
 			d := fuse.DirEntry{
 				Name: n,
 			}
 			if s := fuse.ToStatT(infos[i]); s != nil {
+
+				if s.Ino == 1 {
+					// workaround for finding a nested root folder
+					continue
+				}
+
 				d.Mode = uint32(s.Mode)
 			} else {
 				log.Printf("ReadDir entry %q for %q has no stat info", n, name)

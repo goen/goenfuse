@@ -25,28 +25,28 @@ func (f *Ffs) monut() (e error) {
 func (f *Ffs) putcontext() (e error) {
 	var what tapper_root
 	var my nodefs.Node
+	var optz fuse.MountOptions
 
 	if reflect.TypeOf(what) == reflect.TypeOf(f.stuff) {
 		stuff := (f.stuff.(tapper_root))
 
 		my = &tapper_root{Node: nodefs.NewDefaultNode(),
 			itemz: stuff.itemz, self: stuff.self}
+
+		optz.SingleThreaded = true
 	} else {
 
-		finalFs := NewLooperFileSystem("foo")
+		finalFs := NewLooperFileSystem(".")
 		pathFs := pathfs.NewPathNodeFs(finalFs, nil)
 
 		my = pathFs.Root()
+		optz.SingleThreaded = false
 	}
 
 	con := nodefs.NewFileSystemConnector(my, nil)
 	raw := fuse.NewRawFileSystem(con.RawFS())
-	optz := &fuse.MountOptions{SingleThreaded: true}
 
-	f.be.gc, e = fuse.NewServer(raw, f.dir, optz)
-	//	f.be.gc, _, e = nodefs.MountRoot(f.dir, /*root node*/, nil)
-
-	//(*fuse.Server, *FileSystemConnector, error)
+	f.be.gc, e = fuse.NewServer(raw, f.dir, &optz)
 
 	return e
 }
