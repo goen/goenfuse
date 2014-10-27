@@ -40,7 +40,7 @@ func scan_path(p string) (items []string, has_me bool) {
 	return items, has_me
 }
 
-func tracker_main() {
+func tracker_main() int {
 	fmt.Println("HELLO FROM TRACKER")
 
 	// TODO: dump ENV
@@ -63,9 +63,14 @@ func tracker_main() {
 		fmt.Println("Command finished with error: ", err)
 	*/
 	// TODO: wait
+
+	f := selffile("abspaths")
+	fmt.Println(f)
+
 	fmt.Println("TODO:wait for the actual binary to complete")
 	/**/
 	fmt.Println("BYE BYE FROM TRACKER")
+	return 0
 }
 
 
@@ -91,8 +96,7 @@ func main() {
 	}
 
 	if tracker {
-		tracker_main()
-		return
+		os.Exit(tracker_main())
 	}
 
 	// welcome to the fuse part

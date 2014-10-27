@@ -12,11 +12,15 @@ import (
 )
 
 const (
-	foffset = 1
+	foffset = 2
 )
 
 func tapcontext(i [][]string, z *self) nodefs.Node {
 	return tapper_root{itemz: i, self: z}
+}
+
+type tapper_real_pathsnode struct {
+	pathz []string
 }
 
 type tapper_root struct {
@@ -90,6 +94,7 @@ func (r tapper_root) OpenDir(context *fuse.Context) ([]fuse.DirEntry, fuse.Statu
 	var dirz [100 + foffset]fuse.DirEntry
 
 	dirz[0] = fuse.DirEntry{Name: "tracker", Mode: 0555}
+	dirz[1] = fuse.DirEntry{Name: "abspaths", Mode: 0555}
 
 	end := int(len(r.itemz))
 	if end >= 100 {

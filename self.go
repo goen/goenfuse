@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"io/ioutil"
+	"strings"
 )
 
 const (
@@ -110,6 +112,18 @@ func selfish_arg() bool {
 	}
 
 	return bytes.Equal([]byte(g[0:l]), []byte("--" + coolflag))
+}
+
+func selffile( file string) []string {
+	myloc, err2 := osext.Executable()
+	if err2 != nil {
+		return []string{}
+	}
+	content, err := ioutil.ReadFile(filepath.Dir(myloc)+"/"+file)
+	if err != nil {
+		return []string{}
+	}
+	return strings.Split(string(content), "\n")
 }
 
 func selfer() bool {
