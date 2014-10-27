@@ -15,16 +15,18 @@ const (
 	foffset = 2
 )
 
-func tapcontext(i [][]string, z *self) nodefs.Node {
-	return tapper_root{itemz: i, self: z}
+func tapcontext(i [][]string, z *self, pathz *[]string) nodefs.Node {
+	return tapper_root{itemz: i, self: z, pathz: pathz}
 }
 
 type tapper_real_pathsnode struct {
-	pathz []string
+	nodefs.Node
+	pathz *[]string
 }
 
 type tapper_root struct {
 	nodefs.Node
+	pathz *[]string
 	itemz [][]string // len(itemz) = 1 + maximum name
 	*self
 }
@@ -54,6 +56,10 @@ func nrn(s *self) *tappertrackernode {
 	}
 
 	return &tappertrackernode{Node: nodefs.NewDefaultNode(), self: s, f: f}
+}
+
+func gfd(pathz *[]string) *tapper_real_pathsnode {
+	return &tapper_real_pathsnode{Node: nodefs.NewDefaultNode(), pathz: pathz}
 }
 
 func ndn(i int, itemz []string) *tapperdirnode {
@@ -115,6 +121,12 @@ func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) 
 	if name == "tracker" {
 		out.Mode = fuse.S_IFLNK
 		ch := r.Inode().NewChild(name, false, nrn(r.self))
+		return ch, fuse.OK
+	}
+
+	if name == "abspaths" {
+		out.Mode = fuse.S_IFREG
+		ch := r.Inode().NewChild(name, false, gfd(r.pathz))
 		return ch, fuse.OK
 	}
 

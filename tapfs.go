@@ -17,7 +17,7 @@ const (
 	inodeoffset = 5
 )
 
-func tapcontext(i [][]string, z *self) fs.FS {
+func tapcontext(i [][]string, z *self, pathz *[]string) fs.FS {
 	return tapperfs{r: tapperrootnode{itemz: i, s: z}}
 }
 
