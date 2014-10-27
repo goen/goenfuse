@@ -2,7 +2,6 @@
 package main
 
 import (
-	//	"fmt"
 	"bufio"
 	"bytes"
 	"os"
@@ -70,19 +69,26 @@ func self_check(path string) bool {
 		if err != nil {
 			return false
 		}
+
 		line, err = br.ReadSlice(tag[len(tag)-1])
 		if err == bufio.ErrBufferFull {
-			//			fmt.Println("LEN IS ENOUGH :D", len(line))
+
 			continue
 		} else if err != nil {
 			return false
 		}
+
+		if len(line) >= len(tag) {
+			if bytes.Equal(line[len(line)-len(tag):], tag) {
+				return true
+			}
+		}
+
 		if len(line)+1 != len(tag) {
 			continue
 		}
 
 		if bytes.Equal(line, tag[1:]) {
-			//			fmt.Println("FOUND!!!")
 			return true
 		}
 	}
