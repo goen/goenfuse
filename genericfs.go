@@ -34,17 +34,16 @@ func failsafe_mkdir_all(dir string, perm os.FileMode) error {
 }
 
 func mount(dir string) (f Ffs, e error) {
-	_, e = os.Stat(f.dir)
+	_, e = os.Stat(dir)
 	f.lack = e != nil
 	f.dir = dir
 	f.u = false
+
 	if f.lack {
-		//	e = os.MkdirAll(dir, 755)	//this may panic
 		e = failsafe_mkdir_all(dir, 755)
 		if e != nil {
 			return f, e
 		}
-		fmt.Println("maked ", dir)
 	}
 
 	f.monut()

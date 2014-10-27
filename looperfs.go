@@ -20,11 +20,6 @@ func loopcontext() interface{} {
 	return nil
 }
 
-
-type looper_root struct {
-}
-
-
 type LooperFileSystem struct {
 	// TODO - this should need default fill in.
 	pathfs.FileSystem
