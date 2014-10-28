@@ -28,10 +28,7 @@ func (f *Ffs) putcontext() (e error) {
 	var optz fuse.MountOptions
 
 	if reflect.TypeOf(what) == reflect.TypeOf(f.stuff) {
-		stuff := (f.stuff.(tapper_root))
-
-		my = &tapper_root{Node: nodefs.NewDefaultNode(),
-			itemz: stuff.itemz, self: stuff.self, pathz: stuff.pathz}
+		my = &tapper_root{Node: nodefs.NewDefaultNode()}
 
 		optz.SingleThreaded = true
 	} else {

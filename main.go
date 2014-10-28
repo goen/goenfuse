@@ -214,7 +214,7 @@ func main() {
 	bin, errb := mount(mpoint_gbin)
 
 	loop.stuff = loopcontext()
-	bin.stuff = tapcontext(pitems, &myself, path)
+	bin.stuff = tapcontext()
 
 	if errl == nil {
 		errl = loop.putcontext()

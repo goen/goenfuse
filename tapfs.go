@@ -7,8 +7,6 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 
-	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 )
@@ -17,8 +15,8 @@ const (
 	inodeoffset = 5
 )
 
-func tapcontext(i [][]string, z *self, pathz *[]string) fs.FS {
-	return tapperfs{r: tapperrootnode{itemz: i, s: z}}
+func tapcontext() fs.FS {
+	return tapperfs{r: tapperrootnode{}}
 }
 
 //ok
@@ -42,26 +40,11 @@ type tapperfs struct {
 }
 
 //ok
-type tapperrootnode struct {
-	itemz [][]string // len(itemz) = 1 + maximum name
-	s     *self
-}
+type tapperrootnode struct {}
 
 //ok
-type tappertrackernode struct {
-	s *self
-	f *os.File
-}
-
-//ok
-type tapperdirnode struct {
-	i     uint64 //name = i, inode = i + inodeoffset
-	itemz []string
-}
-
-type tapperbinlink struct {
-	inode uint64
-}
+type tapperlooppipe struct {}
+type tappertracepipe struct {}
 
 //ok
 
@@ -72,7 +55,7 @@ func (s tapperfs) Root() (fs.Node, fuse.Error) {
 
 func (tapperrootnode) Attr() fuse.Attr {
 	a := generic_attr()
-	a.Inode = 1
+	a.Inode = 2
 	a.Size = 4096
 	a.Blocks = 8
 	a.Mode = os.ModeDir | 0555
@@ -82,145 +65,37 @@ func (tapperrootnode) Attr() fuse.Attr {
 
 //ok
 func (s tapperrootnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
-	if name == "tracker" || name == ".track" || name == ".untrack" {
-		return tappertrackernode{s: s.s}, nil
+
+
+	switch (name) {
+	case "loop":
+		return tapperlooppipe{}, nil
+	case "trace":
+		return tappertracepipe{}, nil
+
+	default:
+	return nil, fuse.ENOENT
 	}
-
-	var i int
-
-	n, err := fmt.Sscanf(name, "%02d", &i)
-
-	if (err != nil) || (n != 1) || (i >= len(s.itemz)) {
-		return nil, fuse.ENOENT
-	}
-
-	return tapperdirnode{i: uint64(i), itemz: s.itemz[i]}, nil
 }
 
 //ok
 func (s tapperrootnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
-	var dirz [103]fuse.Dirent
-	foffset := 3
+	var dirz [2]fuse.Dirent
+	foffset := uint64(inodeoffset)
 
-	dirz[0] = fuse.Dirent{Inode: 2, Name: "tracker", Type: fuse.DT_File}
-	dirz[1] = fuse.Dirent{Inode: 3, Name: ".track", Type: fuse.DT_File}
-	dirz[2] = fuse.Dirent{Inode: 4, Name: ".untrack", Type: fuse.DT_File}
+	//DT_FIFO uppercase man
+	dirz[0] = fuse.Dirent{Inode: foffset, Name: "loop", Type: fuse.DT_FIFO}
+	dirz[1] = fuse.Dirent{Inode: foffset+1, Name: "trace", Type: fuse.DT_FIFO}
 
-	end := int(len(s.itemz))
-	if end >= 100 {
-		end = 100
-	}
-
-	for i := 0; i < end; i++ {
-		dirz[i+foffset].Inode = uint64(i + inodeoffset)
-		dirz[i+foffset].Name = fmt.Sprintf("%02d", i)
-		dirz[i+foffset].Type = fuse.DT_Dir
-	}
-	sdirs := dirz[0 : end+foffset]
+	sdirs := dirz[0:]
 
 	return sdirs, nil
 }
 
-func (t tappertrackernode) Open(req *fuse.OpenRequest, resp *fuse.OpenResponse, intr fs.Intr) (fs.Handle, fuse.Error) {
-	//TODO: open self here
-	// get self path here
-	name, _ := (*t.s).get()
-
-	file, err := ioutil.ReadFile(name)
-
-	if err != nil {
-		fmt.Println("!!!!!!!")
-	}
-
-	return fs.DataHandle(file), err
-
+func (tapperlooppipe) Attr() fuse.Attr {
+	return fuse.Attr{Mode: os.ModeNamedPipe | 0777}
 }
 
-/*
-func (t tappertrackernode) Read(req *fuse.ReadRequest, resp *fuse.ReadResponse, intr fs.Intr) fuse.Error {
-	// TODO check to see if opened?
-	_, err := t.f.Seek(req.Offset, 0)
-	if err != nil {
-		return fuse.EIO
-	}
-	_, err = io.ReadFull(t.f, resp.Data)
-	if err != nil {
-		return fuse.EIO
-	}
-	return nil
-}
-
-func (t tappertrackernode) Flush(req *fuse.FlushRequest, intr fs.Intr) fuse.Error {
-	t.f.Close()
-	return nil
-}
-*/
-//ok
-func (t tappertrackernode) Attr() fuse.Attr {
-	_, z := (*t.s).get()
-
-	a := generic_attr()
-
-	a.Inode = 2
-	a.Size = z
-	a.Blocks = (z / 512)
-	a.Mode = 0555
-	a.Nlink = 1 // correct?//FIXME
-	return a
-}
-
-//ok
-func (s tapperdirnode) Attr() fuse.Attr {
-	a := generic_attr()
-
-	a.Inode = s.i + inodeoffset
-	a.Size = 4096
-	a.Blocks = 8
-	a.Mode = os.ModeDir | 0555
-	a.Nlink = 2 // correct?//FIXME
-	return a
-}
-
-func (s tapperdirnode) ReadDir(intr fs.Intr) ([]fuse.Dirent, fuse.Error) {
-	var foobar []fuse.Dirent
-
-	ibase := (s.i << 18) + 128
-
-	for i := range s.itemz {
-		item := fuse.Dirent{Inode: uint64(i) + ibase, Name: s.itemz[i], Type: fuse.DT_Link}
-		foobar = append(foobar, item)
-	}
-	return foobar, nil
-}
-
-func (s tapperdirnode) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
-
-	ibase := (s.i << 18) + 128
-
-	// TODO: binary search
-	for i := range s.itemz {
-		if name == s.itemz[i] {
-			return tapperbinlink{inode: ibase + uint64(i)}, nil
-		}
-	}
-
-	return nil, fuse.ENOENT
-}
-
-//important: do not add Getattr, it will not work
-
-//ok
-func (s tapperbinlink) Attr() fuse.Attr {
-	a := generic_attr()
-
-	a.Inode = s.inode
-	a.Size = 10
-	a.Blocks = 8
-	a.Mode = 0555 | os.ModeSymlink
-	a.Nlink = 1
-	return a
-}
-
-func (tapperbinlink) Readlink(req *fuse.ReadlinkRequest, intr fs.Intr) (string, fuse.Error) {
-	return "../tracker", nil
+func (tappertracepipe) Attr() fuse.Attr {
+	return fuse.Attr{Mode: os.ModeNamedPipe | 0777}
 }
