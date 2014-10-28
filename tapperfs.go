@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	foffset = 2
+	foffset = 4
 )
 
 func tapcontext(i [][]string, z *self, pathz []string) nodefs.Node {
@@ -102,6 +102,8 @@ func (r tapper_root) OpenDir(context *fuse.Context) ([]fuse.DirEntry, fuse.Statu
 
 	dirz[0] = fuse.DirEntry{Name: "tracker", Mode: 0555}
 	dirz[1] = fuse.DirEntry{Name: "abspaths", Mode: 0555}
+	dirz[2] = fuse.DirEntry{Name: "read", Mode: 0555}
+	dirz[3] = fuse.DirEntry{Name: "write", Mode: 0555}
 
 	end := int(len(r.itemz))
 	if end >= 100 {
@@ -130,7 +132,12 @@ func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) 
 		ch := r.Inode().NewChild(name, false, gfd(r.pathz))
 		return ch, fuse.OK
 	}
-
+	if name == "read" {
+		return nil, fuse.ENOENT
+	}
+	if name == "write" {
+		return nil, fuse.ENOENT
+	}
 	var i int
 
 	n, err := fmt.Sscanf(name, "%02d", &i)
