@@ -11,6 +11,9 @@ import (
 	"sync"
 
 	"bitbucket.org/kardianos/osext"
+	"os/exec"
+	"strings"
+	"syscall"
 )
 
 const (
@@ -41,35 +44,44 @@ func scan_path(p string) (items []string, has_me bool) {
 }
 
 func tracker_main() int {
-	fmt.Println("HELLO FROM TRACKER")
 
-	// TODO: dump ENV
-	fmt.Println("ENV:", os.Environ())
+	// clean the PATH
 
-	// TODO: dump ARGS
-	fmt.Println("ARGS:", os.Args)
-
-	// TODO: dump ARGS
-	fmt.Println("EXEC:run the actual binary:", os.Args)
-
-	/*
-		cmd := exec.Command(os.Args[0], os.Args[1:]...)
-		err := cmd.Start()
-		if err != nil {
-			fmt.Println(err)
+	var newpath []string
+	p := strings.Split(os.Getenv("PATH"), ":")
+	for i := range p {
+		pi := filepath.Clean(p[i])
+		if len(pi) >= 3  {
+			if decodedir(pi[len(pi)-2:]) != 255 {
+				continue
+			}
 		}
-		fmt.Println("Waiting for command to finish...")
-		err = cmd.Wait()
-		fmt.Println("Command finished with error: ", err)
-	*/
-	// TODO: wait
 
-	f := selffile("abspaths")
-	fmt.Println(f)
+		newpath = append(newpath, p[i])
+	}
+	os.Setenv("PATH", strings.Join(newpath, ":"))
 
-	fmt.Println("TODO:wait for the actual binary to complete")
-	/**/
-	fmt.Println("BYE BYE FROM TRACKER")
+	xec := filepath.Clean(selffile("abspaths")[underscore_hack()] + "/" + os.Args[0])
+
+	cmd := exec.Command(xec, os.Args[1:]...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Start()
+	if err != nil {
+		return -1
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+				return status.ExitStatus()
+			}
+		}
+		return -2
+	}
+
 	return 0
 }
 

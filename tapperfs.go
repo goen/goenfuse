@@ -160,9 +160,6 @@ func (t tapper_real_pathsnode) GetAttr(out *fuse.Attr, file nodefs.File, context
 		s += uint64(len(t.pathz[i]))
 		again = true
 	}
-	if s > 0 {
-		s--
-	}
 
 	out.Mode = fuse.S_IFREG | 0555
 	out.Size = s

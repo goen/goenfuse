@@ -137,15 +137,8 @@ func selfer() bool {
 	return dir == mpoint_gbin
 }
 
-
-func self_2digit_dir() uint8 {
-	// lookup by readlink -f /proc/$pid/exe
-	myloc, err2 := osext.Executable()
-	if err2 != nil {
-		return 255
-	}
-
-	dir := filepath.Base(filepath.Dir(myloc))
+func decodedir(d string) uint8 {
+	dir := []byte(d)
 	if len(dir) != 2 {
 		return 255
 	}
@@ -158,4 +151,21 @@ func self_2digit_dir() uint8 {
 		return 255
 	}
 	return num
+}
+
+func underscore_hack() uint8 {
+	p := os.Getenv("_")
+	dir := filepath.Base(filepath.Dir(p))
+	return decodedir(dir)
+}
+
+func self_2digit_dir() uint8 {
+	// lookup by readlink -f /proc/$pid/exe
+	myloc, err2 := osext.Executable()
+	if err2 != nil {
+		return 255
+	}
+
+	dir := filepath.Base(filepath.Dir(myloc))
+	return decodedir(dir)
 }
