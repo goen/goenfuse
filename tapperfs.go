@@ -113,8 +113,8 @@ func (r tapper_root) OpenDir(context *fuse.Context) ([]fuse.DirEntry, fuse.Statu
 
 	dirz[0] = fuse.DirEntry{Name: "tracker", Mode: 0555}
 	dirz[1] = fuse.DirEntry{Name: "abspaths", Mode: 0555}
-	dirz[2] = fuse.DirEntry{Name: "read", Mode: 0555}
-	dirz[3] = fuse.DirEntry{Name: "write", Mode: 0555}
+	dirz[2] = fuse.DirEntry{Name: "read", Mode: 0777}
+	dirz[3] = fuse.DirEntry{Name: "write", Mode: 0777}
 
 	end := int(len(r.itemz))
 	if end >= 100 {
@@ -144,12 +144,12 @@ func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) 
 		return ch, fuse.OK
 	}
 	if name == "read" {
-		out.Mode = fuse.S_IFIFO
+		out.Mode = 0x1000 | 0777
 		ch := r.Inode().NewChild(name, false, asd())
 		return ch, fuse.OK
 	}
 	if name == "write" {
-		out.Mode = fuse.S_IFIFO
+		out.Mode = 0x1000 | 0777
 		ch := r.Inode().NewChild(name, false, ghj())
 		return ch, fuse.OK
 	}
@@ -169,7 +169,38 @@ func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) 
 }
 func (tapperdirnode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
 
-	out.Mode = fuse.S_IFDIR | 0555
+	out.Mode = fuse.S_IFDIR | 0777
+
+	return fuse.OK
+}
+
+func (tapperreadpipe) Open(flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
+
+	fmt.Println("TAPPERFS: R OPEN!")
+
+	return nodefs.NewDefaultFile(), fuse.OK
+}
+
+func (tapperreadpipe) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
+	out.Mode = 0x1000 | 0777
+
+	return fuse.OK
+}
+
+func (tapperreadpipe) Read(file nodefs.File, dest []byte, off int64, context *fuse.Context) (fuse.ReadResult, fuse.Status) {
+	dest = []byte("Hello readers")
+	return fuse.ReadResultData(dest), fuse.OK
+}
+
+func (tapperwritepipe) Open(flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
+
+	fmt.Println("TAPPERFS: W OPEN!")
+
+	return nodefs.NewDefaultFile(), fuse.OK
+}
+
+func (tapperwritepipe) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
+	out.Mode = 0x1000 | 0644
 
 	return fuse.OK
 }
