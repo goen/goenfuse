@@ -47,7 +47,7 @@ func scan_path(p string) (items []string, has_me bool) {
 }
 
 func tracker_main() int {
-	trynotify("EXEC //" + filepath.Clean(os.Args[0])+"//")
+	trynotify("EXEC //" + filepath.Clean(os.Args[0])+"//", true)
 
 	// clean the PATH
 
@@ -91,13 +91,15 @@ func tracker_main() int {
 	return 0
 }
 
-func trynotify(s string) bool {
+func trynotify(s string, who bool) bool {
 	// notify the listener
-	pipe, err := tapopen()
+	pipe, err := tapopen(who)
 	if err == nil {
 		fmt.Fprintln(pipe, s)
 		pipe.Close()
 		return true
+	} else {
+		fmt.Println("error", err)
 	}
 	return false
 }
@@ -242,7 +244,7 @@ func main() {
 			break
 		}
 
-		trynotify("UMOUNTED")
+		trynotify("UMOUNT", false)
 
 		if loop.umount() != nil {
 			fmt.Println("Umounting ", loop.dir, " failed")

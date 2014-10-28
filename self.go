@@ -117,26 +117,18 @@ func selfish_arg() bool {
 }
 
 
-func teeopen() (rdc io.ReadCloser, err error) {
-
-	fmt.Println("653456")
-
-	a, b := os.Open(mpoint_gbin+"/foo")
-	if b != nil {
-		return rdc, fmt.Errorf("Unable to open the input pipe:",b)
-	}
-
-	fmt.Println("653456")
-	return a, nil
-}
-
-func tapopen() (rdr io.WriteCloser, err error){
+func tapopen(who bool) (rdr io.WriteCloser, err error){
+	var s string
+	if who {
 	myloc, err2 := osext.Executable()
 	if err2 != nil {
 		return nil, fmt.Errorf("Unable to find the output pipe:",err2)
 	}
-
-	a, b := os.Create(filepath.Dir(myloc)+"/foo")
+	s = filepath.Dir(myloc)
+	} else {
+		s = mpoint_gbin
+	}
+	a, b := os.Create(s+"/foo")
 	if b != nil {
 		return nil, fmt.Errorf("Unable to open the output pipe")
 	}
