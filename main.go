@@ -49,10 +49,12 @@ func scan_path(p string) (items []string, has_me bool) {
 func tracker_main() int {
 	trynotify("EXEC //" + filepath.Clean(os.Args[0])+"//", true)
 
-	// clean the PATH
 
+
+	// clean the PATH
+	oldpath := os.Getenv("PATH")
 	var newpath []string
-	p := strings.Split(os.Getenv("PATH"), ":")
+	p := strings.Split(oldpath, ":")
 	for i := range p {
 		pi := filepath.Clean(p[i])
 		if len(pi) >= 3  {
@@ -64,13 +66,19 @@ func tracker_main() int {
 		newpath = append(newpath, p[i])
 	}
 	os.Setenv("PATH", strings.Join(newpath, ":"))
-
-	xec := filepath.Clean(selffile("abspaths")[underscore_hack()] + "/" + filepath.Base(os.Args[0]))
+	xec, errrrr := exec.LookPath(filepath.Base(os.Args[0]))
+	if errrrr != nil {
+		fmt.Println("env ==",os.Environ())
+		xec = os.Args[0]
+	}
+	os.Setenv("PATH", oldpath)
 
 	cmd := exec.Command(xec, os.Args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+
 	err := cmd.Start()
 	if err != nil {
 		fmt.Println("err1")
