@@ -14,9 +14,9 @@ import (
 	"os/exec"
 	"strings"
 	"syscall"
-	"time"
-	"io/ioutil"
-	"io"
+//	"time"
+//	"io/ioutil"
+//	"io"
 )
 
 const (
@@ -47,14 +47,8 @@ func scan_path(p string) (items []string, has_me bool) {
 }
 
 func tracker_main() int {
-		fmt.Println("Yeah, tracked")
-	pipe, errr := tapopen(true)
-	if errr != nil {
-		fmt.Println("Error: opening write pipe")
-		return -3
-	}
-	fmt.Fprintf(pipe, "Hi")
-		fmt.Println("Wrote")
+	trynotify("EXEC //" + filepath.Clean(os.Args[0])+"//")
+
 	// clean the PATH
 
 	var newpath []string
@@ -71,7 +65,7 @@ func tracker_main() int {
 	}
 	os.Setenv("PATH", strings.Join(newpath, ":"))
 
-	xec := filepath.Clean(selffile("abspaths")[underscore_hack()] + "/" + os.Args[0])
+	xec := filepath.Clean(selffile("abspaths")[underscore_hack()] + "/" + filepath.Base(os.Args[0]))
 
 	cmd := exec.Command(xec, os.Args[1:]...)
 	cmd.Stdin = os.Stdin
@@ -97,50 +91,15 @@ func tracker_main() int {
 	return 0
 }
 
-func ftwrap(cl **tee) {
-	time.Sleep((1 * time.Second)/4)
-	fmt.Println("err= ")
-	fmt.Println(fdgs(cl))
-
-}
-func fdgs(cl **tee) error {
-	fmt.Println("TEEING")
-
-	rwc, err := teeopen()
-	if err != nil {
-	fmt.Println("@@@#$")
-		return fmt.Errorf("Error: opening pipe:", err)
+func trynotify(s string) bool {
+	// notify the listener
+	pipe, err := tapopen()
+	if err == nil {
+		fmt.Fprintln(pipe, s)
+		pipe.Close()
+		return true
 	}
-
-	fmt.Println("TEEING2")
-
-	*cl = &rwc
-	fmt.Println("TEEING3")
-
-	for !rwc.stop {
-		rwc.Lock()
-		rwc.Unlock()
-
-
-		data, err := ioutil.ReadAll(rwc)
-		if err != nil {
-			break
-		}
-
-		rwc.Lock()
-		rwc.Unlock()
-		_, err = io.WriteString(rwc, string(data))
-		if err != nil {
-			break
-		}
-
-		rwc.Lock()
-		rwc.Unlock()
-
-	}
-	rwc.Close()
-	fmt.Println("dobe2")
-	return nil
+	return false
 }
 
 func main() {
@@ -244,10 +203,6 @@ func main() {
 	loop, errl := mount(mpoint_gloop)
 	bin, errb := mount(mpoint_gbin)
 
-	var cl *tee
-
-	go ftwrap(&cl)
-
 	loop.stuff = loopcontext()
 	bin.stuff = tapcontext(pitems, &myself, path)
 
@@ -287,11 +242,7 @@ func main() {
 			break
 		}
 
-		(*cl).Lock()
-		(*cl).Kill()
-		ioutil.WriteFile(mpoint_gbin + "/write",[]byte("KILLED\n"),0777)
-		(*cl).Unlock()
-
+		trynotify("UMOUNTED")
 
 		if loop.umount() != nil {
 			fmt.Println("Umounting ", loop.dir, " failed")

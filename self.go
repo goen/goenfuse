@@ -117,51 +117,26 @@ func selfish_arg() bool {
 }
 
 
-type tee struct {
-	sync.Mutex
-	stop bool
-	io.ReadCloser
-	io.WriteCloser
-}
+func teeopen() (rdc io.ReadCloser, err error) {
 
-func (t tee) Close() error {
-	t.ReadCloser.Close()
-	t.WriteCloser.Close()
-	return nil
-}
+	fmt.Println("653456")
 
-func (t tee) Kill() {
-	t.stop = true
-}
-
-func teeopen() (rdc tee, err error) {
-	a, b := os.Open(mpoint_gbin+"/write")
+	a, b := os.Open(mpoint_gbin+"/foo")
 	if b != nil {
 		return rdc, fmt.Errorf("Unable to open the input pipe:",b)
 	}
 
-	out, errr := tapopen(false)
-	if errr != nil {
-		a.Close()
-		return rdc, fmt.Errorf("Error: opening out pipe:", errr)
-	}
-
-	return tee{ReadCloser:a, WriteCloser:out}, nil
+	fmt.Println("653456")
+	return a, nil
 }
 
-func tapopen( who bool) (rdr io.WriteCloser, err error){
+func tapopen() (rdr io.WriteCloser, err error){
 	myloc, err2 := osext.Executable()
 	if err2 != nil {
 		return nil, fmt.Errorf("Unable to find the output pipe:",err2)
 	}
-	var pipe string
-	if who {
-		pipe = "/write"
-	} else {
-		pipe = "/read"
-	}
 
-	a, b := os.Create(filepath.Dir(myloc)+pipe)
+	a, b := os.Create(filepath.Dir(myloc)+"/foo")
 	if b != nil {
 		return nil, fmt.Errorf("Unable to open the output pipe")
 	}
