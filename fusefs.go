@@ -31,7 +31,7 @@ func (f *Ffs) putcontext() (e error) {
 		stuff := (f.stuff.(tapper_root))
 
 		my = &tapper_root{Node: nodefs.NewDefaultNode(),
-			itemz: stuff.itemz, self: stuff.self}
+			itemz: stuff.itemz, self: stuff.self, pathz: stuff.pathz}
 
 		optz.SingleThreaded = true
 	} else {

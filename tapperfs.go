@@ -9,24 +9,25 @@ import (
 
 	"fmt"
 	"os"
+	"strings"
 )
 
 const (
 	foffset = 2
 )
 
-func tapcontext(i [][]string, z *self, pathz *[]string) nodefs.Node {
+func tapcontext(i [][]string, z *self, pathz []string) nodefs.Node {
 	return tapper_root{itemz: i, self: z, pathz: pathz}
 }
 
 type tapper_real_pathsnode struct {
 	nodefs.Node
-	pathz *[]string
+	pathz []string
 }
 
 type tapper_root struct {
 	nodefs.Node
-	pathz *[]string
+	pathz []string
 	itemz [][]string // len(itemz) = 1 + maximum name
 	*self
 }
@@ -58,7 +59,7 @@ func nrn(s *self) *tappertrackernode {
 	return &tappertrackernode{Node: nodefs.NewDefaultNode(), self: s, f: f}
 }
 
-func gfd(pathz *[]string) *tapper_real_pathsnode {
+func gfd(pathz []string) *tapper_real_pathsnode {
 	return &tapper_real_pathsnode{Node: nodefs.NewDefaultNode(), pathz: pathz}
 }
 
@@ -150,6 +151,24 @@ func (tapperdirnode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Con
 
 	return fuse.OK
 }
+
+func (t tapper_real_pathsnode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
+	var s uint64
+	var again bool
+	for i := range t.pathz {
+		if again {s++}
+		s += uint64(len(t.pathz[i]))
+		again = true
+	}
+	if s > 0 {
+		s--
+	}
+
+	out.Mode = fuse.S_IFREG | 0555
+	out.Size = s
+	return fuse.OK
+}
+
 func (t tappertrackernode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
 	_, size := t.self.get()
 	out.Mode = fuse.S_IFREG | 0555
@@ -183,4 +202,24 @@ func (tapper_root) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Conte
 	out.Mode = fuse.S_IFDIR | 0755
 
 	return fuse.OK
+}
+
+func (t tapper_real_pathsnode) Open(flags uint32, context *fuse.Context) (file nodefs.File, code fuse.Status) {
+	return nodefs.NewDefaultFile(), fuse.OK
+}
+func (t tapper_real_pathsnode) Read(file nodefs.File, dest []byte, off int64, context *fuse.Context) (fuse.ReadResult, fuse.Status) {
+	var full string
+	var again bool
+	for i := range t.pathz {
+		if again {full += "\n"}
+		full += t.pathz[i]
+		again = true
+	}
+
+	rder := strings.NewReader(full)
+
+	rder.ReadAt(dest, off)
+	return fuse.ReadResultData(dest), fuse.OK
+
+//	return nil, fuse.ENOSYS
 }
