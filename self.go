@@ -11,6 +11,8 @@ import (
 	"sync"
 	"io/ioutil"
 	"strings"
+	"fmt"
+	"io"
 )
 
 const (
@@ -112,6 +114,20 @@ func selfish_arg() bool {
 	}
 
 	return bytes.Equal([]byte(g[0:l]), []byte("--" + coolflag))
+}
+
+func tapopen() (rdr io.Writer, err error){
+	myloc, err2 := osext.Executable()
+	if err2 != nil {
+		return nil, fmt.Errorf("Unable to find the write pipe")
+	}
+
+	a, b := os.Create(filepath.Dir(myloc)+"/write")
+	if b != nil {
+		return nil, fmt.Errorf("Unable to open the write pipe")
+	}
+
+	return io.Writer(a), nil
 }
 
 func selffile( file string) []string {

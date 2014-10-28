@@ -45,6 +45,13 @@ func scan_path(p string) (items []string, has_me bool) {
 
 func tracker_main() int {
 
+	pipe, errr := tapopen()
+	if errr != nil {
+		fmt.Println("Error: opening write pipe")
+		return -3
+	}
+	fmt.Fprintf(pipe, "Hi")
+
 	// clean the PATH
 
 	var newpath []string

@@ -20,6 +20,9 @@ func tapcontext(i [][]string, z *self, pathz []string) nodefs.Node {
 	return tapper_root{itemz: i, self: z, pathz: pathz}
 }
 
+type tapperreadpipe struct {nodefs.Node}
+type tapperwritepipe struct {nodefs.Node}
+
 type tapper_real_pathsnode struct {
 	nodefs.Node
 	pathz []string
@@ -57,6 +60,14 @@ func nrn(s *self) *tappertrackernode {
 	}
 
 	return &tappertrackernode{Node: nodefs.NewDefaultNode(), self: s, f: f}
+}
+
+func asd() *tapperreadpipe {
+	return &tapperreadpipe{Node: nodefs.NewDefaultNode()}
+}
+
+func ghj() *tapperwritepipe {
+	return &tapperwritepipe{Node: nodefs.NewDefaultNode()}
 }
 
 func gfd(pathz []string) *tapper_real_pathsnode {
@@ -133,10 +144,14 @@ func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) 
 		return ch, fuse.OK
 	}
 	if name == "read" {
-		return nil, fuse.ENOENT
+		out.Mode = fuse.S_IFIFO
+		ch := r.Inode().NewChild(name, false, asd())
+		return ch, fuse.OK
 	}
 	if name == "write" {
-		return nil, fuse.ENOENT
+		out.Mode = fuse.S_IFIFO
+		ch := r.Inode().NewChild(name, false, ghj())
+		return ch, fuse.OK
 	}
 	var i int
 
@@ -154,7 +169,7 @@ func (r tapper_root) Lookup(out *fuse.Attr, name string, context *fuse.Context) 
 }
 func (tapperdirnode) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
 
-	out.Mode = fuse.S_IFDIR | 0755
+	out.Mode = fuse.S_IFDIR | 0555
 
 	return fuse.OK
 }
@@ -168,7 +183,7 @@ func (t tapper_real_pathsnode) GetAttr(out *fuse.Attr, file nodefs.File, context
 		again = true
 	}
 
-	out.Mode = fuse.S_IFREG | 0555
+	out.Mode = fuse.S_IFREG | 0644
 	out.Size = s
 	return fuse.OK
 }
