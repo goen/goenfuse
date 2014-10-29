@@ -14,8 +14,9 @@ CI
 SCOPE
 =====
 
-**♥** tracing opens, reads and writes on any subdir via fuse
-**♥** provide named pipes for the toolsuite integration
++ tracing opens, reads and writes on any subdir via fuse
++ provide named pipes for the toolsuite integration
++ write raw dump to a pipeline
 
 CONTRIBUTING
 ============
