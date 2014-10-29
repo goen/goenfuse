@@ -2,5 +2,5 @@ package main
 
 const (
 	mpoint_gloop = "goenloop"
-	mpoint_gbin  = "goenbin"
+	mpoint_gbin  = "goenpipe"
 )
