@@ -67,7 +67,7 @@ func (tapperlooppipe) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Co
 }
 
 func (tappertracepipe) GetAttr(out *fuse.Attr, file nodefs.File, context *fuse.Context) (code fuse.Status) {
-	out.Mode = 0x1000 | 0644
+	out.Mode = 0x1000 | 0777
 
 	return fuse.OK
 }
