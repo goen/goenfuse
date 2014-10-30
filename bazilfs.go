@@ -20,7 +20,7 @@ func (f *Ffs) monut() (e error) {
 }
 
 func (f *Ffs) putcontext() (e error) {
-	f.be.s = fs.FS(f.stuff)
+	f.be.s = fs.FS(f.s)
 	return nil
 }
 
@@ -42,10 +42,6 @@ func (f Ffs) serve() {
 
 func destory(f Ffs) {
 	f.be.c.Close()
-}
-
-type stuffer interface {
-	Root() (fs.Node, fuse.Error)
 }
 
 type fbackend struct {

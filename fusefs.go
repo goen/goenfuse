@@ -7,8 +7,6 @@ import (
 	"github.com/hanwen/go-fuse/fuse"
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
-	"reflect"
-	//	"fmt"
 )
 
 ////////////////////////////////////////////
@@ -23,17 +21,16 @@ func (f *Ffs) monut() (e error) {
 }
 
 func (f *Ffs) putcontext() (e error) {
-	var what tapper_root
 	var my nodefs.Node
 	var optz fuse.MountOptions
 
-	if reflect.TypeOf(what) == reflect.TypeOf(f.stuff) {
+	if f.d == nil {
 		my = &tapper_root{Node: nodefs.NewDefaultNode()}
 
 		optz.SingleThreaded = true
 	} else {
 
-		finalFs := NewLooperFileSystem(".")
+		finalFs := NewLooperFileSystem(".", f.d)
 		pathFs := pathfs.NewPathNodeFs(finalFs, nil)
 
 		my = pathFs.Root()
@@ -64,9 +61,6 @@ func (f Ffs) check() error {
 
 func destory(f Ffs) {
 	//XXX go-fuse destructor
-}
-
-type stuffer interface {
 }
 
 type fbackend struct {

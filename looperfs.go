@@ -14,6 +14,8 @@ import (
 	"io"
 	"log"
 	"time"
+
+	"fmt"
 )
 
 func loopcontext(v interface{}) interface{} {
@@ -22,7 +24,7 @@ func loopcontext(v interface{}) interface{} {
 
 type LooperFileSystem struct {
 	// TODO - this should need default fill in.
-	d dump
+	d *dump
 	pathfs.FileSystem
 	Root string
 }
@@ -30,10 +32,11 @@ type LooperFileSystem struct {
 // A FUSE filesystem that shunts all request to an underlying file
 // system. Its main purpose is to provide test coverage without
 // having to build a synthetic filesystem.
-func NewLooperFileSystem(root string) pathfs.FileSystem {
+func NewLooperFileSystem(root string, d *dump) pathfs.FileSystem {
 	return &LooperFileSystem{
 		FileSystem: pathfs.NewDefaultFileSystem(),
 		Root:       root,
+		d: d,
 	}
 }
 func (fs *LooperFileSystem) OnMount(nodeFs *pathfs.PathNodeFs) {
@@ -187,6 +190,8 @@ func (fs *LooperFileSystem) Symlink(pointedTo string, linkName string, context *
 	return fuse.ToStatus(os.Symlink(pointedTo, fs.GetPath(linkName)))
 }
 func (fs *LooperFileSystem) Rename(oldPath string, newPath string, context *fuse.Context) (codee fuse.Status) {
+	fmt.Println("yeah yeah:", oldPath, newPath)
+
 	fs.d.write(Fileop{Code: OP_RENAME, File: newPath, Extra: oldPath})
 
 	err := os.Rename(fs.GetPath(oldPath), fs.GetPath(newPath))

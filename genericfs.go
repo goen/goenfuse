@@ -101,5 +101,5 @@ type Ffs struct {
 	lack  bool
 	be    fbackend
 	u     bool //umounted ok
-	stuff stuffer
+	d *dump
 }

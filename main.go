@@ -96,8 +96,8 @@ func main() {
 	loop, errl := mount(mpoint_gloop)
 	bin, errb := mount(mpoint_gbin)
 
-	loop.stuff = loopcontext(&d)
-	bin.stuff = tapcontext()
+	loop.d = &d
+	bin.d = nil
 
 	if errl == nil {
 		errl = loop.putcontext()
