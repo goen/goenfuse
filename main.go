@@ -127,7 +127,6 @@ func main() {
 	loop.check()
 	bin.check()
 
-	fmt.Println("Waiting for the dump")
 	go pipeopener(&d)
 
 	for !bin.u || !loop.u {
