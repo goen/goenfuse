@@ -10,10 +10,11 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"time"
 )
 
 
-func (d dump) write(op Fileop) {
+func (d *dump) write(op Fileop) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -24,12 +25,71 @@ func (d dump) write(op Fileop) {
 
 type dump struct {
 	sync.Mutex
+	tt bool
+	here bool
+	terminate bool
+	s *os.File
 	t *bufio.Writer
 	enc *gob.Encoder
 }
 
+func busy(d *dump) {
+	d.Lock()
+	defer d.Unlock()
+
+	for !d.here {
+		d.Unlock()
+		time.Sleep(1000000)
+		d.Lock()
+	}
+}
+
+func pipetoucher(d *dump) {
+	d.Lock()
+	defer d.Unlock()
+
+	if d.tt || d.terminate {
+		return
+	}
+
+	d.terminate = true
+
+	s, err := os.Open(mpoint_gbin+"/loop")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	s.Close()
+}
+
+func pipeopener(d *dump) {
+
+	// open the writer
+	s, errr := os.OpenFile(mpoint_gbin+"/loop", os.O_WRONLY, 0200)
+	if errr != nil {
+		fmt.Println(errr)
+		return
+	}
+
+	d.Lock()
+	defer d.Unlock()
+
+	d.here = true
+	d.tt = true
+	d.s = s
+
+	if d.terminate {
+		return
+	}
+
+	d.t = bufio.NewWriter(d.s)
+	d.enc = gob.NewEncoder(d.t)
+}
+
 func main() {
 	var d dump
+	d.t = nil
 
 	//capturing signals before and after mount
 	sigchan := make(chan os.Signal, 1)
@@ -70,16 +130,7 @@ func main() {
 	bin.check()
 
 	fmt.Println("Waiting for the dump")
-
-	// open the writer
-	s, errr := os.OpenFile(mpoint_gbin+"/loop", os.O_WRONLY, 0200)
-	if errr != nil {
-		fmt.Println(errr)
-		return
-	}
-
-	d.t = bufio.NewWriter(s)
-	d.enc = gob.NewEncoder(d.t)
+	go pipeopener(&d)
 
 	for !bin.u || !loop.u {
 
@@ -90,11 +141,17 @@ func main() {
 		}
 
 		d.write(Fileop{Code: OP_UMOUNT, File: ""})
+
+		pipetoucher(&d)
+		busy(&d)
 		d.Lock()
-		if d.t != nil {
-			d.t.Flush()
+		if d.tt {
+			if d.t != nil {
+				d.t.Flush()
+			}
+			d.tt = false
 			d.t = nil
-			s.Close()
+			d.s.Close()
 		}
 		d.Unlock()
 
