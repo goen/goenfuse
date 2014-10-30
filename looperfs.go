@@ -18,9 +18,6 @@ import (
 	"fmt"
 )
 
-func loopcontext(v interface{}) interface{} {
-	return v
-}
 
 type LooperFileSystem struct {
 	// TODO - this should need default fill in.
