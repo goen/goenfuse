@@ -20,7 +20,11 @@ func (f *Ffs) monut() (e error) {
 }
 
 func (f *Ffs) putcontext() (e error) {
-	f.be.s = fs.FS(f.s)
+	if f.d == nil {
+		f.be.s = fs.FS(tapperfs{r: tapperrootnode{}})
+	} else {
+		f.be.s = fs.FS(looperfs{d: f.d})
+	}
 	return nil
 }
 

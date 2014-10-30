@@ -15,10 +15,6 @@ const (
 	inodeoffset = 5
 )
 
-func tapcontext() fs.FS {
-	return tapperfs{r: tapperrootnode{}}
-}
-
 //ok
 func generic_attr() fuse.Attr {
 	u := time.Unix(0, 0)
@@ -40,7 +36,8 @@ type tapperfs struct {
 }
 
 //ok
-type tapperrootnode struct {}
+type tapperrootnode struct {
+}
 
 //ok
 type tapperlooppipe struct {}

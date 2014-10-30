@@ -16,25 +16,24 @@ const (
 	loopfs_rdev = 0x70F5 //LOop-FS
 )
 
-func loopcontext() fs.FS {
-	return looperfs{}
-}
-
 //ok
 type looperfs struct {
+	d *dump
 }
 
 type looperdir struct {
+	d *dump
 	name string
 }
 
 type looperfile struct {
+	d *dump
 	name string
 	f    *os.File
 }
 
-func (looperfs) Root() (fs.Node, fuse.Error) {
-	return looperdir{name: "."}, nil
+func (l looperfs) Root() (fs.Node, fuse.Error) {
+	return looperdir{name: ".", d: l.d}, nil
 }
 
 func (l looperdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
@@ -48,9 +47,9 @@ func (l looperdir) Lookup(name string, intr fs.Intr) (fs.Node, fuse.Error) {
 	}
 
 	if fi.IsDir() {
-		return looperdir{name: l.name + "/" + name}, nil
+		return looperdir{name: l.name + "/" + name, d: l.d}, nil
 	} else {
-		return looperfile{name: l.name + "/" + name}, nil
+		return looperfile{name: l.name + "/" + name, d: l.d}, nil
 	}
 
 	return nil, fuse.ENOENT
