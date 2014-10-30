@@ -25,8 +25,7 @@ func (d *dump) write(op Fileop) {
 
 type dump struct {
 	sync.Mutex
-	tt bool
-	here bool
+	tt byte
 	terminate bool
 	s *os.File
 	t *bufio.Writer
@@ -37,7 +36,7 @@ func busy(d *dump) {
 	d.Lock()
 	defer d.Unlock()
 
-	for !d.here {
+	for d.tt == 0 {
 		d.Unlock()
 		time.Sleep(1000000)
 		d.Lock()
@@ -48,7 +47,7 @@ func pipetoucher(d *dump) {
 	d.Lock()
 	defer d.Unlock()
 
-	if d.tt || d.terminate {
+	if d.tt != 0 || d.terminate {
 		return
 	}
 
@@ -75,8 +74,7 @@ func pipeopener(d *dump) {
 	d.Lock()
 	defer d.Unlock()
 
-	d.here = true
-	d.tt = true
+	d.tt = 1
 	d.s = s
 
 	if d.terminate {
@@ -145,11 +143,11 @@ func main() {
 		pipetoucher(&d)
 		busy(&d)
 		d.Lock()
-		if d.tt {
+		if d.tt == 1 {
 			if d.t != nil {
 				d.t.Flush()
 			}
-			d.tt = false
+			d.tt = 2
 			d.t = nil
 			d.s.Close()
 		}
