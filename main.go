@@ -18,6 +18,12 @@ func (d *dump) write(op Fileop) {
 	d.Lock()
 	defer d.Unlock()
 
+	if op.Nsec == 0 {
+
+		op.Nsec = time.Now().UnixNano
+
+	}
+
 	if d.t != nil {
 		d.enc.Encode(op)
 	}
