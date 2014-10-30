@@ -24,10 +24,17 @@ const (
 	OP_LINK
 	OP_ACCESS
 	OP_CREATE
+	OP_READ
+	OP_WRITE
+	OP_RELEASE
+	OP_FLUSH
+	OP_FSYNC
 )
 
 type Fileop struct {
 	Code uint8
+	Openid uint64
+	Errno int32
 	File string
 	Extra string
 }

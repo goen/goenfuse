@@ -8,22 +8,60 @@ import (
 	"github.com/hanwen/go-fuse/fuse/nodefs"
 	"github.com/hanwen/go-fuse/fuse/pathfs"
 
-	"path/filepath"
-	"syscall"
-	"os"
 	"io"
 	"log"
+	"os"
+	"path/filepath"
+	"syscall"
 	"time"
-
-	"fmt"
 )
 
+func (fs *LooperFileSystem) NewLooperFile(f *os.File) nodefs.File {
+	oid := fs.oid
+	fs.oid++
+	return &looperFile{File: nodefs.NewLoopbackFile(f),
+		oid: oid,
+		d: fs.d}
+}
+
+func (f *looperFile) Read(buf []byte, off int64) (res fuse.ReadResult, code fuse.Status) {
+	f.d.write(Fileop{Code: OP_READ, Openid: f.oid})
+
+	return f.File.Read(buf, off)
+}
+func (f *looperFile) Write(data []byte, off int64) (uint32, fuse.Status) {
+	f.d.write(Fileop{Code: OP_WRITE, Openid: f.oid})
+
+	return f.File.Write(data, off)
+}
+func (f *looperFile) Release() {
+	f.d.write(Fileop{Code: OP_RELEASE, Openid: f.oid})
+
+	f.File.Release()
+}
+func (f *looperFile) Flush() fuse.Status {
+	f.d.write(Fileop{Code: OP_FLUSH, Openid: f.oid})
+
+	return f.File.Flush()
+}
+func (f *looperFile) Fsync(flags int) (code fuse.Status) {
+	f.d.write(Fileop{Code: OP_FSYNC, Openid: f.oid})
+
+	return f.File.Fsync(flags)
+}
+
+type looperFile struct {
+	nodefs.File
+	oid uint64
+	d *dump
+}
 
 type LooperFileSystem struct {
 	// TODO - this should need default fill in.
 	d *dump
 	pathfs.FileSystem
 	Root string
+	oid uint64
 }
 
 // A FUSE filesystem that shunts all request to an underlying file
@@ -33,7 +71,8 @@ func NewLooperFileSystem(root string, d *dump) pathfs.FileSystem {
 	return &LooperFileSystem{
 		FileSystem: pathfs.NewDefaultFileSystem(),
 		Root:       root,
-		d: d,
+		d:          d,
+		oid:        0,
 	}
 }
 func (fs *LooperFileSystem) OnMount(nodeFs *pathfs.PathNodeFs) {
@@ -85,8 +124,6 @@ func (fs *LooperFileSystem) OpenDir(name string, context *fuse.Context) (stream 
 				continue
 			}
 
-
-
 			n := infos[i].Name()
 			d := fuse.DirEntry{
 				Name: n,
@@ -116,13 +153,19 @@ func (fs *LooperFileSystem) OpenDir(name string, context *fuse.Context) (stream 
 	return output, fuse.OK
 }
 func (fs *LooperFileSystem) Open(name string, flags uint32, context *fuse.Context) (fuseFile nodefs.File, status fuse.Status) {
-	fs.d.write(Fileop{Code: OP_OPEN, File: name})
 
 	f, err := os.OpenFile(fs.GetPath(name), int(flags), 0)
 	if err != nil {
-		return nil, fuse.ToStatus(err)
+		fuseFile = nil
+		status = fuse.ToStatus(err)
+	} else {
+		fuseFile = fs.NewLooperFile(f)
+		status = fuse.OK
 	}
-	return nodefs.NewLoopbackFile(f), fuse.OK
+
+	fs.d.write(Fileop{Code: OP_OPEN, File: name, Openid: fs.oid, Errno: int32(status)})
+
+	return
 }
 func (fs *LooperFileSystem) Chmod(path string, mode uint32, context *fuse.Context) (code fuse.Status) {
 	fs.d.write(Fileop{Code: OP_CHMOD, File: path})
@@ -187,8 +230,6 @@ func (fs *LooperFileSystem) Symlink(pointedTo string, linkName string, context *
 	return fuse.ToStatus(os.Symlink(pointedTo, fs.GetPath(linkName)))
 }
 func (fs *LooperFileSystem) Rename(oldPath string, newPath string, context *fuse.Context) (codee fuse.Status) {
-	fmt.Println("yeah yeah:", oldPath, newPath)
-
 	fs.d.write(Fileop{Code: OP_RENAME, File: newPath, Extra: oldPath})
 
 	err := os.Rename(fs.GetPath(oldPath), fs.GetPath(newPath))
@@ -208,5 +249,5 @@ func (fs *LooperFileSystem) Create(path string, flags uint32, mode uint32, conte
 	fs.d.write(Fileop{Code: OP_CREATE, File: path})
 
 	f, err := os.OpenFile(fs.GetPath(path), int(flags)|os.O_CREATE, os.FileMode(mode))
-	return nodefs.NewLoopbackFile(f), fuse.ToStatus(err)
+	return fs.NewLooperFile(f), fuse.ToStatus(err)
 }
