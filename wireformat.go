@@ -35,7 +35,7 @@ type Fileop struct {
 	Code uint8
 	Openid uint64
 	Errno int32
-	NSec       int64
+	Nsec       int64
 	File string
 	Extra string
 }

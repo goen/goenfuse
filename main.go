@@ -20,7 +20,7 @@ func (d *dump) write(op Fileop) {
 
 	if op.Nsec == 0 {
 
-		op.Nsec = time.Now().UnixNano
+		op.Nsec = time.Now().UnixNano()
 
 	}
 
